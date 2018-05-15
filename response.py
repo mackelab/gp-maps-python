@@ -49,7 +49,7 @@ def create_stimuli(contrasts, orientations, repetitions):
     return S
 
 
-def compute_responses(m, contrasts, orientations, repetitions):
+def compute_responses(m, contrasts, orientations, repetitions, sigma=0.01):
     """ Compute matrix of responses
     
     Args:
@@ -69,7 +69,7 @@ def compute_responses(m, contrasts, orientations, repetitions):
         for c in contrasts:
             for j in range(repetitions):
             
-                r = response(m, c, theta, sigma=0.1)
+                r = response(m, c, theta, sigma=sigma)
                 responses.append(r.reshape(-1))
 
     
