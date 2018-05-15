@@ -101,5 +101,22 @@ def plot_amplitude_map(m, cmap='jet', title='Amplitude'):
     return f, ax
 
 def get_indices(size):
+    """ Given the size of an OPM, compute the indices of the pixels
     
+    Args:
+        size: size of the orientation preference map, either scalar (square OPM) or tuple (rectangular OPM)
+    
+    Returns:
+        An npixels x 2 matrix, where the kth row contains the x and y coordinates of the kth pixel
+    """
+    
+    if isinstance(size, int):
+        sx, sy = size, size
+    else:
+        sx, sy = size
+        
+    X, Y = np.meshgrid(np.arange(sx), np.arange(sy))
+    indices = np.vstack((X.flatten(), Y.flatten())).T
+    
+    return indices
     
