@@ -7,10 +7,13 @@ def plot_pinwheels(m, ax=None, color='white', linewidth=2):
     """ Plot the pinwheels (zero crossings) of an orientation preference map
     
     Args:
-        - m: the orientation preference map (complex)
-        - ax: matplotlib axis to plot on. If not given, new figure is initialized
-        - color: line color for plt.plot(...)
-        - linewidth: argument for plt.plot(...)
+        m: the orientation preference map (complex)
+        ax: matplotlib axis to plot on. If not given, new figure is initialized
+        color: line color for plt.plot(...)
+        linewidth: argument for plt.plot(...)
+        
+    Returns:
+        list of contours (consists of 2d points)
     """
     
     # if an ax is given as an argument, we don't need to initialize a new one

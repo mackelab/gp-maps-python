@@ -99,3 +99,7 @@ def plot_amplitude_map(m, cmap='jet', title='Amplitude'):
     ax.set_title(title)
 
     return f, ax
+
+def get_indices(size):
+    
+    
