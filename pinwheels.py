@@ -13,7 +13,7 @@ def plot_pinwheels(m, ax=None, color='white', linewidth=2):
         linewidth: argument for plt.plot(...)
         
     Returns:
-        list of contours (consists of 2d points)
+        list of pinwheel contours (consists of 2d points)
     """
     
     # if an ax is given as an argument, we don't need to initialize a new one
