@@ -1,6 +1,6 @@
 import numpy as np
 
-def mexican_hat_kernel(x, y, sigma, k=2.0, alpha=1.0):
+def mexican_hat_kernel(x, y, sigma=1.0, k=2.0, alpha=1.0):
     """ Mexican hat kernel (approximated as a difference of Gaussians). More efficient implementation.
     
     Args:
@@ -12,17 +12,25 @@ def mexican_hat_kernel(x, y, sigma, k=2.0, alpha=1.0):
     Returns:
         mexican hat distance between x and y (scalar if x and y have shape[0] = 1, row vector otherwise)
     """
+    x = np.atleast_2d(x)
+    y = np.atleast_2d(y)
+    
     var1 = sigma**2
     var2 = (k * sigma)**2
+    
     d = np.sum((x - y)**2, axis=1)
+
     
     # exponential terms for a,b = 1; a,b = 2; a=1, b=2
     d1 = np.exp(-d / (4 * var1))
     d2 = np.exp(-d / (4 * var2))
     dcross = np.exp(-d / (2 * (var1 + var2)))
-    return alpha**2 * ((d1 / var1 + d2 / var2) / 4 - dcross / (var1 + var2)) / np.pi
+    
+    result = alpha**2 * ((d1 / var1 + d2 / var2) / 4 - dcross / (var1 + var2)) / np.pi
+        
+    return result
 
-def dog_kernel(x, y, sigma, k=2.0, alpha=1.0):
+def dog_kernel(x, y, sigma=1.0, k=2.0, alpha=1.0):
     """ Mexican hat kernel (approximated as a difference of Gaussians). More readable implementation
     
     Args:
@@ -34,6 +42,10 @@ def dog_kernel(x, y, sigma, k=2.0, alpha=1.0):
     Returns:
         mexican hat distance between x and y (scalar if x and y have shape[0] = 1, row vector otherwise)   
     """
+    
+    x = np.atleast_2d(x)
+    y = np.atleast_2d(y)
+    
     var = [sigma**2, (k*sigma)**2]
     alpha = [alpha, -alpha]
     
