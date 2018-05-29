@@ -16,9 +16,14 @@ def make_opm(size, sigma=4., k=2.):
         m: complex np.array with shape (size, size)
     """
     
+    if isinstance(size, int):
+        sx, sy = size, size
+    else:
+        sx, sy = size
+    
     # generate white noise for real and imaginary map
-    a = np.random.randn(size, size)
-    b = np.random.randn(size, size)
+    a = np.random.randn(sx, sy)
+    b = np.random.randn(sx, sy)
     
     # apply difference of Gaussians filter to both maps
     a = filters.gaussian_filter(a, sigma) - filters.gaussian_filter(a, k * sigma)
