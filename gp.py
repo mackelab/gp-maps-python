@@ -1,5 +1,7 @@
 from kernels import mexican_hat_kernel
 from linalg import ICD
+from opm import get_indices
+import numpy as np
 
 
 class LowRankPrior():
@@ -62,6 +64,7 @@ class GaussianProcessOPM():
         self.size = size
         self.idx = get_indices(size)
         
+        
         self.rank = prior_rank
         
         self.kernel = kernel
@@ -69,8 +72,12 @@ class GaussianProcessOPM():
         self.prior = LowRankPrior(self.idx, method=prior_method, rank=prior_rank)
         self.prior.fit(kernel=self.kernel, **kernel_kwargs)
         
-    def fit(self, responses, noise_cov):
+    def fit(self, stimuli, responses, noise_cov):
+        V = stimuli
+        d = stimuli.shape[1]
+        
         R = responses
+        n = R.shape[1]
         
         G = self.prior.G
         K = G @ G.T
@@ -89,7 +96,7 @@ class GaussianProcessOPM():
         for v, r in zip(V, R):
             vr += np.kron(v, r)[:,np.newaxis]
 
-        mu_post = K_post @ np.kron(np.eye(d), np.linalg.inv(K_e)) @ vr
+        mu_post = K_post @ np.kron(np.eye(d), S) @ vr
         
         return mu_post
     
