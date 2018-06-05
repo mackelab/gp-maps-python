@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from scipy.ndimage import filters
 
-def make_opm(size, sigma=4., k=2.):
+def make_opm(size, sigma=4., k=2., alpha=1.):
     """ Generate an orientation preference map (to be used as a fake ground truth). 
      
     
@@ -26,8 +26,8 @@ def make_opm(size, sigma=4., k=2.):
     b = np.random.randn(sx, sy)
     
     # apply difference of Gaussians filter to both maps
-    a = filters.gaussian_filter(a, sigma) - filters.gaussian_filter(a, k * sigma)
-    b = filters.gaussian_filter(b, sigma) - filters.gaussian_filter(b, k * sigma)
+    a = alpha * filters.gaussian_filter(a, sigma) - alpha * filters.gaussian_filter(a, k * sigma)
+    b = alpha * filters.gaussian_filter(b, sigma) - alpha * filters.gaussian_filter(b, k * sigma)
     
     # combine real and imaginary parts
     m = a + 1j * b
