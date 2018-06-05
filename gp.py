@@ -3,6 +3,24 @@ from linalg import ICD
 from opm import get_indices
 import numpy as np
 
+def prior_covariance(idx, kernel, **kwargs):
+    """ Compute the prior covariance matrix for an OPM, given a kernel function
+    Args:
+        idx: The indices at which to compute the covariance (npixels x 2 matrix, where the kth column contains the x and y coordinates of the kth pixel)
+        kernel: a kernel function that takes two vectors x and y
+        kwargs: parameters for the kernel function
+        
+    Returns:
+        a matrix of dimensionality npixels x npixels
+    """
+    
+    K = np.zeros((idx.shape[0], idx.shape[0]))
+    for i in range(idx.shape[0]):
+        for j in range(idx.shape[0]):
+            K[i, j] = kernel(idx[i], idx[j], **kwargs)
+            
+    return K
+
 
 class LowRankPrior():
     
