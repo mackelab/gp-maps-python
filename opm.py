@@ -125,6 +125,7 @@ def get_indices(size):
     
     return indices
 
+
 def calculate_map(responses, stimuli, size=None):
     """ Compute OPM components from an experiment (max likelihood solution)
     

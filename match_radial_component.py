@@ -2,8 +2,25 @@ from scipy.signal import correlate2d
 from scipy.optimize import curve_fit
 import numpy as np
 from kernels import mexican_hat_kernel
+from opm import calculate_map
 
 def rot_avg(xcorr, spacing=None):
+    """ Given a square image xcorr, which has to have an odd number of elements,
+        performs a rotational average at radius points r, and also returns
+        the standard deviation for each r, and the number of datapoints that was
+        used to calculate it.
+        if argument 'spacing' is given, it only evaluates the rotational average at
+        bin sizes which are given by the vector spacing.
+    Args:
+        xcorr: input matrix
+        spacing: (array) bins at which to evaluate the average
+        
+    Returns:
+        rotmean: rotational average
+        r: radius points
+        rotstd: standard deviations
+        n: number of data points per radius
+    """
     
     
     s1 = (xcorr.shape[0] - 1) / 2
@@ -47,6 +64,16 @@ def rot_avg(xcorr, spacing=None):
 
 
 def radial_component(a, spacing=None):
+    """ Given an input image a, compute the radial component of its autocorrelation
+    
+    Args:
+        a: input image
+        spacing: (array) bins at which to evaluate the average
+    
+    Returns:
+        mean: radial component of the autocorrelation
+        r: radius points at which the average was evaluated
+    """
     if spacing is None:
         maxr = int(np.floor(np.sqrt(a.shape[0]**2 + a.shape[1]**2)))
         spacing = np.arange(maxr)
@@ -55,19 +82,34 @@ def radial_component(a, spacing=None):
     return mean, r
 
 
-def match_radial_component(m, kernel=mexican_hat_kernel, p0=None):
+def match_radial_component(responses, stimuli, size=None, kernel=mexican_hat_kernel, p0=None):
+    """ Estimate the hyperparameters of the covariance function from the empirical map
+    
+    Args:
+        responses: N x n array, responses from an experiment
+        stimuli: N x d array, stimulus conditions for each trial
+        size: (n_x, n_y) shape of result, defaults to (sqrt(n), sqrt(n))
+        kernel: the covariance function
+        p0: dictionary, where the names are the argument names for the kernel and the values are the initial guesses
+        
+    Returns:
+        optimal hyperparameter values
+    """
+    
+    # calculate the orientation preference map
+    m = calculate_map(responses, stimuli, size)
     
     # if none are given, use default arguments for mexican hat kernel with reasonable initial values
     if p0 is None:
         p0 = {'sigma': 3., 'alpha': 2.}
 
     # compute maximal distance in the map
-    maxr = int(np.floor(np.sqrt(m.shape[0]**2 + m.shape[1]**2)))
+    maxr = int(np.floor(np.sqrt(m.shape[1]**2 + m.shape[2]**2)))
     
-    rot_cov = np.zeros((2,maxr-1))
+    rot_cov = np.zeros((m.shape[0]-1,maxr-1))
     
     # for each map component, compute the rotational average of the autocorrelation
-    for i, m_i in enumerate([np.real(m), np.imag(m)]):
+    for i, m_i in enumerate(m[:-1]):
         xcorr = correlate2d(m_i, m_i) / m_i.size
         mean, r = radial_component(m_i, spacing=np.arange(maxr))
         rot_cov[i] = mean
@@ -82,6 +124,5 @@ def match_radial_component(m, kernel=mexican_hat_kernel, p0=None):
 
     # fit the kernel to the empirical map
     popt, pcov = curve_fit(f, xdata=r, ydata=rot_cov, p0=list(p0.values()))
-    sigma_opt, alpha_opt = popt
     
-    return sigma_opt, alpha_opt
+    return popt
