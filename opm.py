@@ -126,32 +126,29 @@ def get_indices(size):
     return indices
 
 
-def calculate_map(responses, stimuli, size=None):
+def calculate_map(responses, stimuli):
     """ Compute OPM components from an experiment (max likelihood solution)
     
     Args:
         responses: N x n array
         stimuli: N x d array
-        size: (n_x, n_y) shape of result, defaults to (sqrt(n), sqrt(n))
         
     Returns: estimated map components: d x n_x x n_y array 
     """
     V = stimuli
     d = V.shape[1]
     R = responses
+    N, nx, ny = R.shape
+    n = int(R.size / N)
     
     # least squares estimate of real and imaginary components of the map
-    M_flat = np.linalg.inv(V.T @ V) @ V.T @ R
+    M_flat = np.linalg.inv(V.T @ V) @ V.T @ R.reshape((N,n))
 
-    # get size to reshape map, defaults to square map
-    if not size:
-        size = int(np.round(np.sqrt(R.shape[1])))
-        size = (size, size)
         
     # reshape map into three
-    M = np.zeros((d, *size))
+    M = np.zeros((d, nx, ny))
     for i, a in enumerate(M_flat):
-        M[i] = a.reshape(*size)
+        M[i] = a.reshape(nx, ny)
         
     return M
     

@@ -82,7 +82,7 @@ def radial_component(a, spacing=None):
     return mean, r
 
 
-def match_radial_component(responses, stimuli, size=None, kernel=mexican_hat_kernel, p0=None):
+def match_radial_component(responses, stimuli, kernel=mexican_hat_kernel, p0=None):
     """ Estimate the hyperparameters of the covariance function from the empirical map
     
     Args:
@@ -97,7 +97,7 @@ def match_radial_component(responses, stimuli, size=None, kernel=mexican_hat_ker
     """
     
     # calculate the orientation preference map
-    m = calculate_map(responses, stimuli, size)
+    m = calculate_map(responses, stimuli)
     
     # if none are given, use default arguments for mexican hat kernel with reasonable initial values
     if p0 is None:
@@ -110,7 +110,6 @@ def match_radial_component(responses, stimuli, size=None, kernel=mexican_hat_ker
     
     # for each map component, compute the rotational average of the autocorrelation
     for i, m_i in enumerate(m[:-1]):
-        xcorr = correlate2d(m_i, m_i) / m_i.size
         mean, r = radial_component(m_i, spacing=np.arange(maxr))
         rot_cov[i] = mean
         

@@ -70,9 +70,9 @@ def compute_responses(m, contrasts, orientations, repetitions, sigma=0.01):
             for j in range(repetitions):
             
                 r = response(m, c, theta, sigma=sigma)
-                responses.append(r.reshape(-1))
+                responses.append(r)
 
     
-    R = np.stack(responses, axis=1).T
+    R = np.stack(responses, axis=0)
     
     return R
