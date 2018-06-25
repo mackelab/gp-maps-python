@@ -92,8 +92,10 @@ class GaussianProcessOPM():
         
     def fit(self, stimuli, responses, noise_cov):
         V = stimuli
-        N = stimuli.shape[0]
-        d = stimuli.shape[1]
+        N = stimuli.shape[0] * stimuli.shape[1]
+        d = stimuli.shape[2]
+        
+        V = V.reshape((N,d))
         
         R = responses.reshape((N,-1))
         n = R.shape[1]

@@ -30,7 +30,7 @@ def create_stimuli(contrasts, orientations, repetitions):
     
     # initialize size and array
     N = len(contrasts) * len(orientations)
-    S = np.zeros((N * repetitions, 3))
+    S = np.zeros((N, repetitions, 3))
     
     i = 0
     
@@ -39,11 +39,11 @@ def create_stimuli(contrasts, orientations, repetitions):
         for c in contrasts:
             for j in range(repetitions):
 
-                S[i, 0] = c * np.cos(2 * theta)
-                S[i, 1] = c * np.sin(2 * theta)
-                S[i, 2] = np.sqrt(.5)
+                S[i, j, 0] = c * np.cos(2 * theta)
+                S[i, j, 1] = c * np.sin(2 * theta)
+                S[i, j, 2] = np.sqrt(.5)
 
-                i += 1
+            i += 1
 
     
     return S
@@ -62,17 +62,17 @@ def compute_responses(m, contrasts, orientations, repetitions, sigma=0.01):
         ntrials x npixels matrix containing responses at each pixel for each trial
     """
     
-    responses = []
+    N = len(contrasts) * len(orientations)
     
+    i = 0
+    responses = np.zeros((N, repetitions, *m.shape))
     # for every combination
     for theta in orientations:
         for c in contrasts:
             for j in range(repetitions):
             
-                r = response(m, c, theta, sigma=sigma)
-                responses.append(r)
+                responses[i,j,:,:] = response(m, c, theta, sigma=sigma, c=np.sqrt(.5))
+            i += 1
 
     
-    R = np.stack(responses, axis=0)
-    
-    return R
+    return responses

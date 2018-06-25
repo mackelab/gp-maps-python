@@ -136,10 +136,13 @@ def calculate_map(responses, stimuli):
     Returns: estimated map components: d x n_x x n_y array 
     """
     V = stimuli
-    d = V.shape[1]
+    d = V.shape[2]
     R = responses
-    N, nx, ny = R.shape
+    N_c, N_r, nx, ny = R.shape
+    N = N_c * N_r
     n = int(R.size / N)
+    
+    V = V.reshape((N,d))
     
     # least squares estimate of real and imaginary components of the map
     M_flat = np.linalg.inv(V.T @ V) @ V.T @ R.reshape((N,n))
