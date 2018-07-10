@@ -30,8 +30,24 @@ def mexican_hat_kernel(x, y, sigma=1.0, k=2.0, alpha=1.0):
         
     return result
 
+
+def fixed_k_mexhat(x, y, sigma=1.0, alpha=1.0):
+    """ Mexican hat kernel with k fixed at 2.0
+    
+    Args:
+        x, y: the distance between these two variables is used as the argument for the kernel
+        sigma: the variance of the first Gaussian component
+        alpha: overall scaling factor
+        
+    Returns:
+        mexican hat distance between x and y (scalar if x and y have shape[0] = 1, row vector otherwise)
+    """
+    return mexican_hat_kernel(x, y, sigma=sigma, k=2.0, alpha=alpha)
+
+
 def dog_kernel(x, y, sigma=1.0, k=2.0, alpha=1.0):
-    """ Mexican hat kernel (approximated as a difference of Gaussians). More readable implementation
+    """ Mexican hat kernel (approximated as a difference of Gaussians). 
+        More readable implementation, same results as mexican_hat_kernel.
     
     Args:
         x, y: the distance between these two variables is used as the argument for the kernel

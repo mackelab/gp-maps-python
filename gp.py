@@ -1,7 +1,9 @@
-from kernels import mexican_hat_kernel
+from kernels import mexican_hat_kernel, fixed_k_mexhat
 from linalg import ICD
 from opm import get_indices
+from match_radial_component import match_radial_component
 import numpy as np
+import inspect
 
 def prior_covariance(idx, kernel, **kwargs):
     """ Compute the prior covariance matrix for an OPM, given a kernel function
@@ -23,6 +25,9 @@ def prior_covariance(idx, kernel, **kwargs):
 
 
 class LowRankPrior():
+    """ (Low rank approximation of a) covariance matrix. Can be fit using Inverse Cholesky Decomposition (icd),
+        or without a low-rank method.
+    """
     
     def __init__(self, x, method=None, rank=None):
         """ Setup LowRank prior
@@ -47,7 +52,8 @@ class LowRankPrior():
         """ Learn a (low-rank) prior.
         Args:
             kernel: a kernel function that takes two vectors x and y
-            ridge: element that gets added to the diagonal to avoid numerical instabilites (use depends on low-rank method)
+            ridge: element that gets added to the diagonal to avoid numerical instabilites (use depends on low-rank
+                    method)
             kernel_kwargs: get passed to kernel(...)
             
         After fitting, the prior has the following attributes:
@@ -76,21 +82,78 @@ class LowRankPrior():
 
         return self.K[idx[0], idx[1]]
     
-class GaussianProcessOPM():
     
-    def __init__(self, size, prior_rank, prior_method='icd', kernel=mexican_hat_kernel, **kernel_kwargs):
+
+    
+    
+class GaussianProcessOPM():
+    """ A Gaussian process used to infer an orientation preference map (OPM) from imaging data.
+    """
+    
+    def __init__(self, size, prior_rank, prior_method='icd', kernel=fixed_k_mexhat):
+        """ Initialize prior fitting method and dimensionalities
+        
+        Args:
+            size: tuple (x, y) or int (results in square map)
+            prior_rank: rank of low-rank prior_approximation (only used if prior_method is given)
+            prior_method: can be either 'icd' or None
+            kernel: kernel function of structure f(x, y, **hyperparams). 
+                    defaults to mexican hat with sigma and and alpha as parameters and fixed k.
+        """
         self.size = size
         self.idx = get_indices(size)
         
         
         self.rank = prior_rank
+        self.prior_method = prior_method
         
         self.kernel = kernel
+       
+    
+    def fit_prior(self):
+        """ Learn a (low-rank) represenation of the prior covariance.
         
-        self.prior = LowRankPrior(self.idx, method=prior_method, rank=prior_rank)
-        self.prior.fit(kernel=self.kernel, **kernel_kwargs)
+        Return:
+            self.prior (fitted LowRankPrior object)
+        """
+        self.prior = LowRankPrior(self.idx, method=self.prior_method, rank=self.rank)
+        self.prior.fit(kernel=self.kernel, **self.kernel_params)
+        return self.prior
         
-    def fit(self, stimuli, responses, noise_cov):
+    
+    def optimize(self, stimuli, responses):
+        """ Estimate the prior hyperparameters by matching them to the radial component 
+            of the empirical map (see match_radial_components).
+            
+        Args:
+            stimuli: N x d array, stimulus conditions for each trial
+            responses: N x n array, responses from an experiment
+        
+        Returns:
+            self.kernel_params, dict containing the names and optimized values of the hyperparameters
+        """
+        
+        # get names and default values for hyperparameters
+        s = inspect.signature(self.kernel)
+        hyperparams = list(s.parameters.values())[2:]
+        p0 = {p.name: p.default for p in hyperparams}
+        
+        p_opt = match_radial_component(responses, stimuli, p0=p0)
+        
+        self.kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
+        
+        return self.kernel_params
+    
+    def fit_posterior(self, stimuli, responses, noise_cov):
+        """ Given a set of stimuli and responses, compute the posterior mean and covariance
+        
+        Args:
+            stimuli: N x d array, stimulus conditions for each trial
+            responses: N x n array, responses from an experiment 
+        
+        Returns:
+            self.mu_post, self.K_post: posterior mean and covariance
+        """
         V = stimuli
         N = stimuli.shape[0] * stimuli.shape[1]
         d = stimuli.shape[2]
@@ -106,9 +169,9 @@ class GaussianProcessOPM():
         
         S = np.linalg.inv(noise_cov)
         
-        K_post_single =  K - 1/beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ G @ G.T
+        K_post_c =  K - 1/beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ G @ G.T
         
-        K_post = np.kron(np.eye(d), K_post_single)
+        self.K_post = np.kron(np.eye(d), K_post_c)
         
         # inefficient version (commented out for readability)
         # K_post = np.linalg.inv(np.linalg.inv(K_m) + np.kron(N/2 * np.eye(d), K_e))
@@ -117,10 +180,45 @@ class GaussianProcessOPM():
         for v, r in zip(V, R):
             vr += np.kron(v, r)[:,np.newaxis]
 
-        mu_post = K_post @ np.kron(np.eye(d), S) @ vr
+        self.mu_post = self.K_post @ np.kron(np.eye(d), S) @ vr
         
-        return mu_post
-    
+        return self.mu_post, self.K_post
+        
+        
+    def fit(self, stimuli, responses, noise_cov, verbose=False):
+        """ Complete fitting procedure:
+            - Estimate prior hyperparameters using empirical map
+            - Fit prior covariance
+            - Compute the posterior mean and covariance (assuming a given noise covariance)
+        
+        Args:
+            stimuli: N x d array, stimulus conditions for each trial
+            responses: N x n array, responses from an experiment 
+            noise_cov: n x n array, noise covariance matrix 
+            verbose: boolean, do you want to print progress info?
+        
+        Returns:
+            self.mu_post: posterior mean
+        """
+        
+        if verbose:
+            print('*** Estimating prior hyperparameters ***')
+        
+        self.optimize(stimuli, responses)
+        
+        
+        if verbose:
+            print('*** Fitting prior ***')
+        self.fit_prior()
+        
+        if verbose:
+            print('*** Fitting posterior ***')
+            
+        self.fit_posterior(stimuli, responses, noise_cov)
+        
+        
+        return self.mu_post
+        
     
 
 """ TODO: do we even need this?
