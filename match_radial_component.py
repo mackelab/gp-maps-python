@@ -86,8 +86,8 @@ def match_radial_component(responses, stimuli, kernel=mexican_hat_kernel, p0=Non
     """ Estimate the hyperparameters of the covariance function from the empirical map
     
     Args:
-        responses: N x n array, responses from an experiment
-        stimuli: N x d array, stimulus conditions for each trial
+        stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
+        responses: N_cond x N_rep x n_x x n_y array, responses from an experiment 
         size: (n_x, n_y) shape of result, defaults to (sqrt(n), sqrt(n))
         kernel: the covariance function
         p0: dictionary, where the names are the argument names for the kernel and the values are the initial guesses

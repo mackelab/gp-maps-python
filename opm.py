@@ -130,8 +130,8 @@ def calculate_map(responses, stimuli):
     """ Compute OPM components from an experiment (max likelihood solution)
     
     Args:
-        responses: N x n array
-        stimuli: N x d array
+        stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
+        responses: N_cond x N_rep x n_x x n_y array, responses from an experiment 
         
     Returns: estimated map components: d x n_x x n_y array 
     """

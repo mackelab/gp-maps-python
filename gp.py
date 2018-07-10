@@ -4,6 +4,7 @@ from opm import get_indices
 from match_radial_component import match_radial_component
 import numpy as np
 import inspect
+from sklearn.decomposition import FactorAnalysis
 
 def prior_covariance(idx, kernel, **kwargs):
     """ Compute the prior covariance matrix for an OPM, given a kernel function
@@ -81,8 +82,6 @@ class LowRankPrior():
         """
 
         return self.K[idx[0], idx[1]]
-    
-    
 
     
     
@@ -126,8 +125,8 @@ class GaussianProcessOPM():
             of the empirical map (see match_radial_components).
             
         Args:
-            stimuli: N x d array, stimulus conditions for each trial
-            responses: N x n array, responses from an experiment
+            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
+            responses: N_cond x N_rep x n_x x n_y array, responses from an experiment 
         
         Returns:
             self.kernel_params, dict containing the names and optimized values of the hyperparameters
@@ -144,12 +143,14 @@ class GaussianProcessOPM():
         
         return self.kernel_params
     
+    
     def fit_posterior(self, stimuli, responses, noise_cov):
         """ Given a set of stimuli and responses, compute the posterior mean and covariance
         
         Args:
-            stimuli: N x d array, stimulus conditions for each trial
-            responses: N x n array, responses from an experiment 
+            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
+            responses: N_cond x N_rep x n_x x n_y array, responses from an experiment
+            noise_cov: n x n array, noise covariance matrix
         
         Returns:
             self.mu_post, self.K_post: posterior mean and covariance
@@ -183,38 +184,111 @@ class GaussianProcessOPM():
         self.mu_post = self.K_post @ np.kron(np.eye(d), S) @ vr
         
         return self.mu_post, self.K_post
+    
+    
+    def learn_noise_model(self, V, R, mu, **noise_kwargs):
+        d = V.shape[2]
+        N = R.shape[0] * R.shape[1]
+        n = R.shape[2] * R.shape[3]
+        
+        # compute residuals
+        z = R.reshape(N, n) - V.reshape(N, d) @ mu.reshape(d, n)
+        
+        if noise_kwargs['method'] == 'factoran':
+            # fit factor analysis model
+            fa = FactorAnalysis(n_components=noise_kwargs['q'])
+            fa.fit(z)
+            sigma = fa.get_covariance()
+            
+        elif noise_kwargs['method'] == 'indep':
+            # maximum of pixel variance across trials
+            sigma = np.eye(n) * np.max(np.mean(z, axis=1))
+        
+        return sigma
         
         
-    def fit(self, stimuli, responses, noise_cov, verbose=False):
+    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
             - Fit prior covariance
             - Compute the posterior mean and covariance (assuming a given noise covariance)
         
         Args:
-            stimuli: N x d array, stimulus conditions for each trial
-            responses: N x n array, responses from an experiment 
-            noise_cov: n x n array, noise covariance matrix 
+            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
+            responses: N_cond x N_rep x n_x x n_y array, responses from an experiment 
+            noise_cov: can be
+                        - n x n numpy.ndarray, given noise covariance matrix 
+                        - 'factoran': iterative factor analysis noise estimation
+                        - 'indep': iterative independent noise estimation
             verbose: boolean, do you want to print progress info?
         
         Returns:
             self.mu_post: posterior mean
         """
         
+        # check if valid noise estimation method is specified
+        if not (type(noise) is np.ndarray or (type(noise) is str and noise in ['factoran', 'indep'])):
+            raise ValueError("Please specify a valid noise model.")
+            
+        # get dimensionalities
+        d = stimuli.shape[2]
+        N_cond = responses.shape[0]
+        N_rep = responses.shape[1]
+        N = N_cond * N_rep
+        n = responses.shape[2] * responses.shape[3]
+        
+        
         if verbose:
             print('*** Estimating prior hyperparameters ***')
-        
+            
         self.optimize(stimuli, responses)
         
         
         if verbose:
             print('*** Fitting prior ***')
+            
         self.fit_prior()
+        
         
         if verbose:
             print('*** Fitting posterior ***')
             
-        self.fit_posterior(stimuli, responses, noise_cov)
+        if type(noise) is np.ndarray:
+            # given noise covariance matrix
+            self.fit_posterior(stimuli, responses, noise)
+            
+            
+        else:
+            if noise_kwargs is None:
+                noise_kwargs = {}
+                
+            # default noise model parameters
+            noise_kwargs.setdefault('iterations', 3)
+            noise_kwargs.setdefault('q', 2)
+            noise_kwargs.setdefault('method', noise)
+            
+            # compute initial estimate, assuming the whole signal is noise
+            sigma_noise_init = np.zeros((n, n))
+            for R_i in responses.reshape(N_cond, N_rep, -1):
+                C_i = np.cov(R_i.T)
+                sigma_noise_init += C_i
+
+            sigma_noise_init /= N_cond
+            
+            # iterative noise fitting procedure
+            for i in range(noise_kwargs['iterations']):
+                
+                if i == 0:
+                    # in the first step use the initial estimate
+                    mu, _ = self.fit_posterior(stimuli, responses, sigma_noise_init)
+                    
+                # learn the noise model (either indep or factoran) given current posterior mean
+                sigma_noise = self.learn_noise_model(V=stimuli, R=responses, mu=mu, **noise_kwargs)
+                
+                # get updated estimate of posterior mean using current estimate of noise covariance
+                mu, _ = self.fit_posterior(stimuli, responses, sigma_noise)
+            
+            self.noise_cov = sigma_noise
         
         
         return self.mu_post
