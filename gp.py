@@ -1,6 +1,6 @@
 from kernels import mexican_hat_kernel, fixed_k_mexhat
 from linalg import ICD
-from opm import get_indices
+from opm import get_indices, calculate_map
 from match_radial_component import match_radial_component
 import numpy as np
 import inspect
@@ -66,11 +66,25 @@ class LowRankPrior():
             self.K = prior_covariance(self.x, kernel=kernel, **kernel_kwargs)
             self.G = ridge_cholesky(self.K)
             
+            self.D = np.eye(self.x.shape[0]) * ridge
+            
         elif self.method.lower() == 'icd':
             icd = ICD(rank=self.rank)
             icd.fit(self.x, kernel, ridge, **kernel_kwargs)
             self.G = icd.G
             self.K = icd
+            
+            n = self.x.shape[0]
+            
+            # correct the diagonal
+            prior_var_uncorrected = np.zeros(n)
+            prior_var_exact = np.zeros(n)
+
+            for k in range(n):
+                prior_var_uncorrected[k] = self.G[k,:] @ self.G[k,:].T
+                prior_var_exact[k] = kernel(self.x[k], self.x[k], **kernel_kwargs)
+
+            self.D = np.diag(prior_var_exact - prior_var_uncorrected + 2 * ridge)
             
 
     def __getitem__(self, idx):
@@ -120,7 +134,7 @@ class GaussianProcessOPM():
         return self.prior
         
     
-    def optimize(self, stimuli, responses):
+    def optimize(self, stimuli, responses, verbose=False):
         """ Estimate the prior hyperparameters by matching them to the radial component 
             of the empirical map (see match_radial_components).
             
@@ -140,6 +154,9 @@ class GaussianProcessOPM():
         p_opt = match_radial_component(responses, stimuli, p0=p0)
         
         self.kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
+        
+        if verbose:
+            print(self.kernel_params)
         
         return self.kernel_params
     
@@ -165,23 +182,28 @@ class GaussianProcessOPM():
         n = R.shape[1]
         
         G = self.prior.G
-        K = G @ G.T
+        K = G @ G.T + self.prior.D
         beta = 2 / R.shape[0] 
         
         S = np.linalg.inv(noise_cov)
         
-        K_post_c =  K - 1/beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ G @ G.T
+        # TODO: what's happening here that is not working with non-square OPMs?
+        
+        K_post_c =  K - 1/beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
         
         self.K_post = np.kron(np.eye(d), K_post_c)
         
-        # inefficient version (commented out for readability)
+        # inefficient version (keeping the comment for readability)
         # K_post = np.linalg.inv(np.linalg.inv(K_m) + np.kron(N/2 * np.eye(d), K_e))
         
-        vr = np.zeros((n*d,1))
-        for v, r in zip(V, R):
-            vr += np.kron(v, r)[:,np.newaxis]
+        # different way of writing vector averaging (calculate_map, i.e. max likelihood)
+        # vr = np.zeros((n*d,1))
+        # for v, r in zip(V, R):
+        #    vr += np.kron(v, r)[:,np.newaxis]
+        
+        # TODO: this can be made more efficient by leveraging the low-rank stuff
 
-        self.mu_post = self.K_post @ np.kron(np.eye(d), S) @ vr
+        self.mu_post = self.K_post @ np.kron(np.eye(d), S) @ calculate_map(responses, stimuli).reshape(n * d, 1)
         
         return self.mu_post, self.K_post
     
@@ -201,8 +223,8 @@ class GaussianProcessOPM():
             sigma = fa.get_covariance()
             
         elif noise_kwargs['method'] == 'indep':
-            # maximum of pixel variance across trials
-            sigma = np.eye(n) * np.max(np.mean(z, axis=1))
+            # pixel variance across trials
+            sigma = np.diag(np.var(z, axis=0))
         
         return sigma
         
@@ -241,7 +263,7 @@ class GaussianProcessOPM():
         if verbose:
             print('*** Estimating prior hyperparameters ***')
             
-        self.optimize(stimuli, responses)
+        self.optimize(stimuli, responses, verbose=verbose)
         
         
         if verbose:
@@ -294,16 +316,3 @@ class GaussianProcessOPM():
         return self.mu_post
         
     
-
-""" TODO: do we even need this?
-# correct the diagonal
-prior_var_uncorrected = np.zeros(n)
-prior_var_exact = np.zeros(n)
-
-for k in range(n):
-    prior_var_uncorrected[k] = G[k,:] @ G[k,:].T
-    prior_var_exact[k] = mexican_hat_kernel(idx[k], idx[k], sigma=2.)
-
-diag = prior_var_exact - prior_var_uncorrected + 2 * 1e-4
-
-K_m = np.kron(np.eye(d), G @ G.T + np.diag(diag))"""
