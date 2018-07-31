@@ -120,8 +120,8 @@ def get_indices(size):
     else:
         sx, sy = size
         
-    X, Y = np.meshgrid(np.arange(sx), np.arange(sy))
-    indices = np.vstack((X.flatten(), Y.flatten())).T
+    X, Y = np.meshgrid(np.arange(sy), np.arange(sx))
+    indices = np.vstack((Y.flatten(), X.flatten())).T
     
     return indices
 

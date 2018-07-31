@@ -178,8 +178,10 @@ class GaussianProcessOPM():
         
         V = V.reshape((N,d))
         
-        R = responses.reshape((N,-1))
-        n = R.shape[1]
+        nx = responses.shape[2]
+        ny = responses.shape[3]
+        n = nx * ny
+        R = responses.reshape((N,n))
         
         G = self.prior.G
         K = G @ G.T + self.prior.D
