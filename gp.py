@@ -1,6 +1,6 @@
 from kernels import mexican_hat_kernel, fixed_k_mexhat
 from linalg import ICD
-from opm import get_indices, calculate_map
+from opm import get_2d_indices, calculate_map
 from match_radial_component import match_radial_component
 import numpy as np
 import inspect
@@ -114,7 +114,7 @@ class GaussianProcessOPM():
                     defaults to mexican hat with sigma and and alpha as parameters and fixed k.
         """
         self.size = size
-        self.idx = get_indices(size)
+        self.idx = get_2d_indices(size)
         
         
         self.rank = prior_rank

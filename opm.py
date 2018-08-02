@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from scipy.ndimage import filters
+from pinwheels import plot_pinwheels
 
 def make_opm(size, sigma=4., k=2., alpha=1.):
     """ Generate an orientation preference map (to be used as a fake ground truth). 
@@ -34,7 +36,7 @@ def make_opm(size, sigma=4., k=2., alpha=1.):
     
     return m
 
-def plot_opm(m, cmap='hsv', title='Preferred orientation'):
+def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade=False, rmin=10, rmax=80):
     """ Plot an orientation preference map m.
     
     Args:
@@ -55,11 +57,28 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation'):
     
     f, ax = plt.subplots()
 
+    r = np.abs(m)
+
+    cmap = cm.get_cmap('hsv', 128)
+
+    theta_rgb = cmap(theta / np.pi)
+
+    if shade:
+        rmin = np.percentile(r, rmin)
+        rmax = np.percentile(r, rmax)
+        r = np.minimum(r, rmax)
+        r = np.maximum(r, rmin)
+        r = (r - rmin) / (rmax - rmin)
+        for i in range(3):
+            theta_rgb[:,:,i] = theta_rgb[:,:,i] + (1 - theta_rgb[:,:,i]) * (1 - r)
+
+
     # plot data and adjust axes
     im = ax.imshow(theta, cmap=cmap)
+    ax.imshow(theta_rgb)
     im.set_clim(0, np.pi)
-    loc = np.linspace(0, np.pi, 5) 
-    
+    loc = np.linspace(0, np.pi, 5)
+
     # label axes
     labels = ['0', r'$\pi / 4$', r'$\pi / 2$', r'$3 \pi / 4$', r'$\pi$']
     cb = f.colorbar(im, ax=ax)
@@ -69,6 +88,12 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation'):
     ax.set_yticks([])
     
     ax.set_title(title)
+    
+    if pinwheels:
+        if not np.iscomplex(m).any():
+            raise ValueError('Map must be complex in order to compute pinwheels')
+        else:
+            plot_pinwheels(m, ax)
 
     return f, ax
 
@@ -105,7 +130,7 @@ def plot_amplitude_map(m, cmap='jet', title='Amplitude'):
 
     return f, ax
 
-def get_indices(size):
+def get_2d_indices(size):
     """ Given the size of an OPM, compute the indices of the pixels
     
     Args:
@@ -120,8 +145,7 @@ def get_indices(size):
     else:
         sx, sy = size
         
-    X, Y = np.meshgrid(np.arange(sy), np.arange(sx))
-    indices = np.vstack((Y.flatten(), X.flatten())).T
+    indices = np.array(np.unravel_index(np.arange(sx*sy), dims=(sx, sy))).T
     
     return indices
 
