@@ -4,6 +4,8 @@ from opm import get_2d_indices, calculate_map
 from match_radial_component import match_radial_component
 import numpy as np
 import inspect
+import dill as pickle
+import os
 from sklearn.decomposition import FactorAnalysis
 
 def prior_covariance(idx, kernel, **kwargs):
@@ -316,5 +318,31 @@ class GaussianProcessOPM():
         
         
         return self.mu_post
+    
+    
+    
+    def save(self, fname):
+        if not isinstance(fname, str):
+            raise ValueError("Parameter fname has to be a string.")
+
+        try:
+            if not os.path.isdir(os.path.dirname(fname)):
+                os.makedirs(os.path.dirname(fname), exist_ok=True)
+
+            pickle.dump(self, open(fname, "wb"))
+        except IOError as io:
+            print("IOError while saving class: {}".format(io))
+
+    @staticmethod
+    def load(fname):
+        if not isinstance(fname, str):
+            raise ValueError("Parameter fname has to be a string.")
+
+        try:
+            sampler = pickle.load(open(fname, "rb"))
+        except IOError as io:
+            print("IOError while saving class: {}".format(io))
+
+        return sampler
         
     
