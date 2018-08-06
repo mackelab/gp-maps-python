@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-
 from scipy.ndimage import filters
-from pinwheels import plot_pinwheels
+
+from .pinwheels import plot_pinwheels
 
 def make_opm(size, sigma=4., k=2., alpha=1.):
     """ Generate an orientation preference map (to be used as a fake ground truth). 
@@ -130,24 +130,7 @@ def plot_amplitude_map(m, cmap='jet', title='Amplitude'):
 
     return f, ax
 
-def get_2d_indices(size):
-    """ Given the size of an OPM, compute the indices of the pixels
-    
-    Args:
-        size: size of the orientation preference map, either scalar (square OPM) or tuple (rectangular OPM)
-    
-    Returns:
-        An npixels x 2 matrix, where the kth row contains the x and y coordinates of the kth pixel
-    """
-    
-    if isinstance(size, int):
-        sx, sy = size, size
-    else:
-        sx, sy = size
-        
-    indices = np.array(np.unravel_index(np.arange(sx*sy), dims=(sx, sy))).T
-    
-    return indices
+
 
 
 def calculate_map(responses, stimuli):

@@ -1,8 +1,8 @@
 from scipy.signal import correlate2d
 from scipy.optimize import curve_fit
 import numpy as np
-from kernels import mexican_hat_kernel
-from opm import calculate_map
+from .kernels import mexican_hat_kernel
+from ..opm import calculate_map
 
 def rot_avg(xcorr, spacing=None):
     """ Given a square image xcorr, which has to have an odd number of elements,

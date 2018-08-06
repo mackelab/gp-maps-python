@@ -1,8 +1,10 @@
-from kernels import mexican_hat_kernel, fixed_k_mexhat
-from linalg import ICD
-from helpers import get_2d_indices
-from opm import calculate_map
-from match_radial_component import match_radial_component
+from .kernels import mexican_hat_kernel, fixed_k_mexhat
+from .helpers import get_2d_indices
+from .match_radial_component import match_radial_component
+from .linalg import ICD
+
+from ..opm import calculate_map
+
 import numpy as np
 import inspect
 import dill as pickle
