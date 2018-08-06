@@ -304,6 +304,9 @@ class GaussianProcessOPM():
             # iterative noise fitting procedure
             for i in range(noise_kwargs['iterations']):
                 
+                if verbose:
+                    print('Fitting noise model: iteration {}'.format(i+1))
+                
                 if i == 0:
                     # in the first step use the initial estimate
                     mu, _ = self.fit_posterior(stimuli, responses, sigma_noise_init)
