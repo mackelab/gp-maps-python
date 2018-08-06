@@ -177,22 +177,24 @@ class GaussianProcessOPM():
         Returns:
             self.mu_post, self.K_post: posterior mean and covariance
         """
-        V = stimuli
+
         N = stimuli.shape[0] * stimuli.shape[1]
         d = stimuli.shape[2]
         
-        V = V.reshape((N,d))
         
         nx = responses.shape[2]
         ny = responses.shape[3]
         n = nx * ny
-        R = responses.reshape((N,n))
         
         G = self.prior.G
         K = G @ G.T + self.prior.D
-        beta = 2 / R.shape[0] 
+        beta = 2 / N
         
         S = np.linalg.inv(noise_cov)
+        
+        # calculate empirical map
+        mhat = calculate_map(responses, stimuli).reshape(n * d, 1)
+        
         
         K_post_c =  K - 1/beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
         
@@ -208,7 +210,7 @@ class GaussianProcessOPM():
         
         # TODO: this can be made more efficient by leveraging the low-rank stuff
 
-        self.mu_post = self.K_post @ np.kron(np.eye(d), S) @ calculate_map(responses, stimuli).reshape(n * d, 1)
+        self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
         
         return self.mu_post, self.K_post
     
