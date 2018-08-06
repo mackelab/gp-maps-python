@@ -194,8 +194,6 @@ class GaussianProcessOPM():
         
         S = np.linalg.inv(noise_cov)
         
-        # TODO: what's happening here that is not working with non-square OPMs?
-        
         K_post_c =  K - 1/beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
         
         self.K_post = np.kron(np.eye(d), K_post_c)
