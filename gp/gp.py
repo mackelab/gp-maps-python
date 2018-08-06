@@ -1,6 +1,7 @@
 from kernels import mexican_hat_kernel, fixed_k_mexhat
 from linalg import ICD
-from opm import get_2d_indices, calculate_map
+from helpers import get_2d_indices
+from opm import calculate_map
 from match_radial_component import match_radial_component
 import numpy as np
 import inspect
