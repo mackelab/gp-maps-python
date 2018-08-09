@@ -3,15 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="bcd488a5-d1c9-4162-bd87-d117f93f1733" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/BayesianOPM.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/BayesianOPM.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/gp/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/opm/gp/gp.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/gp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/gp/helpers.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/helpers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/gp/kernels.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/kernels.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/gp/linalg.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/linalg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/gp/match_radial_component.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/match_radial_component.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/opm.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/opm.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/pinwheels.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/pinwheels.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/response.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/response.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/opm/gp/lowrank.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/lowrank.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -25,41 +18,42 @@
         <counts>
           <entry key="project.closed" value="1" />
           <entry key="project.open.time.4" value="1" />
-          <entry key="project.opened" value="1" />
+          <entry key="project.open.time.7" value="1" />
+          <entry key="project.opened" value="2" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="dummy" value="16" />
-          <entry key="py" value="635" />
+          <entry key="py" value="1438" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="16" />
-          <entry key="Python" value="635" />
+          <entry key="Python" value="1438" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="14" />
+          <entry key="py" value="15" />
           <entry key="txt" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="PLAIN_TEXT" value="1" />
-          <entry key="Python" value="14" />
+          <entry key="Python" value="15" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
-    <leaf>
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opm/opm.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="508">
+            <state relative-caret-position="2070">
               <caret line="143" selection-start-line="143" selection-end-line="143" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -71,8 +65,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opm/pinwheels.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="448">
-              <caret line="34" column="37" lean-forward="true" selection-start-line="34" selection-start-column="37" selection-end-line="34" selection-end-column="37" />
+            <state relative-caret-position="465">
+              <caret line="34" column="37" selection-start-line="34" selection-start-column="37" selection-end-line="34" selection-end-column="37" />
               <folding>
                 <element signature="e#0#38#0" expanded="true" />
               </folding>
@@ -83,7 +77,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opm/response.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-107">
+            <state relative-caret-position="270">
               <caret line="18" column="23" selection-start-line="18" selection-start-column="23" selection-end-line="18" selection-end-column="23" />
             </state>
           </provider>
@@ -92,10 +86,32 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/opm/gp/gp.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3885">
-              <caret line="259" column="39" selection-start-line="259" selection-start-column="39" selection-end-line="259" selection-end-column="39" />
+            <state relative-caret-position="671">
+              <caret line="124" column="54" selection-start-line="124" selection-start-column="54" selection-end-line="124" selection-end-column="54" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/opm/gp/lowrank.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="643">
+              <caret line="120" column="24" selection-start-line="120" selection-start-column="24" selection-end-line="120" selection-end-column="24" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/opm/gp/noise.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="135">
+              <caret line="9" column="42" selection-start-line="9" selection-start-column="42" selection-end-line="9" selection-end-column="42" />
+              <folding>
+                <marker date="1533814902389" expanded="true" signature="38:274" ph="..." />
+                <marker date="1533814902389" expanded="true" signature="294:299" ph="..." />
               </folding>
             </state>
           </provider>
@@ -117,8 +133,9 @@
         <option value="$PROJECT_DIR$/opm/gp/prior.py" />
         <option value="$PROJECT_DIR$/opm/pinwheels.py" />
         <option value="$PROJECT_DIR$/opm/response.py" />
-        <option value="$PROJECT_DIR$/opm/gp/lowrank.py" />
         <option value="$PROJECT_DIR$/opm/opm.py" />
+        <option value="$PROJECT_DIR$/opm/gp/noise.py" />
+        <option value="$PROJECT_DIR$/opm/gp/lowrank.py" />
         <option value="$PROJECT_DIR$/opm/gp/gp.py" />
       </list>
     </option>
@@ -188,7 +205,8 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-4" y="0" width="1928" height="1048" extended-state="6" />
+    <frame x="0" y="0" width="1920" height="1044" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
       <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.18028466" />
@@ -224,13 +242,7 @@
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/gp/match_radial_component.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#36#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/__init__.py">
       <provider selected="true" editor-type-id="text-editor" />
@@ -259,7 +271,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/opm.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="508">
+        <state relative-caret-position="2070">
           <caret line="143" selection-start-line="143" selection-end-line="143" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
@@ -269,8 +281,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/pinwheels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="448">
-          <caret line="34" column="37" lean-forward="true" selection-start-line="34" selection-start-column="37" selection-end-line="34" selection-end-column="37" />
+        <state relative-caret-position="465">
+          <caret line="34" column="37" selection-start-line="34" selection-start-column="37" selection-end-line="34" selection-end-column="37" />
           <folding>
             <element signature="e#0#38#0" expanded="true" />
           </folding>
@@ -279,22 +291,33 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/response.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-107">
+        <state relative-caret-position="270">
           <caret line="18" column="23" selection-start-line="18" selection-start-column="23" selection-end-line="18" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/opm/gp/noise.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="9" column="42" selection-start-line="9" selection-start-column="42" selection-end-line="9" selection-end-column="42" />
+          <folding>
+            <marker date="1533814902389" expanded="true" signature="38:274" ph="..." />
+            <marker date="1533814902389" expanded="true" signature="294:299" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/gp/lowrank.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="493">
-          <caret line="111" column="43" selection-start-line="111" selection-start-column="43" selection-end-line="111" selection-end-column="43" />
+        <state relative-caret-position="643">
+          <caret line="120" column="24" selection-start-line="120" selection-start-column="24" selection-end-line="120" selection-end-column="24" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/gp/gp.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3885">
-          <caret line="259" column="39" selection-start-line="259" selection-start-column="39" selection-end-line="259" selection-end-column="39" />
+        <state relative-caret-position="671">
+          <caret line="124" column="54" selection-start-line="124" selection-start-column="54" selection-end-line="124" selection-end-column="54" />
           <folding>
             <element signature="e#0#35#0" expanded="true" />
           </folding>

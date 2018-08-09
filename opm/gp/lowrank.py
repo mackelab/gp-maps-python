@@ -100,7 +100,7 @@ def lowrank_leftmult(x, D, G, R=None, H=None):
     return y
 
 
-def premult_by_postcov(x, N, prior, D_noise, G_noise):
+def premult_by_postcov(x, N, prior, noise):
     """ Left-multiply x by the posterior covariance matrix given by the prior and noise model
         without explicitly computing or storing the posterior covariance.
 
@@ -118,10 +118,9 @@ def premult_by_postcov(x, N, prior, D_noise, G_noise):
 
     beta = 2 / N
 
-    n, q = G_noise.shape
-    noise_invR = np.eye(q)
+    n, q = noise.G.shape
 
-    y = lowrank_leftdiv_double(y, D=prior.D + beta * D_noise, G1=G_noise, invR1=1 / beta * noise_invR, H1=None,
+    y = lowrank_leftdiv_double(y, D=prior.D + beta * noise.D, G1=noise.G, invR1=1 / beta * np.eye(q), H1=None,
                                G2=prior.G, invR2=None, H2=None)
 
     y = x - y

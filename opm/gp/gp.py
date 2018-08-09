@@ -2,6 +2,8 @@ from .kernels import fixed_k_mexhat
 from .helpers import get_2d_indices
 from .match_radial_component import match_radial_component
 from .prior import LowRankPrior
+from .noise import FixedNoise
+from .lowrank import premult_by_postcov
 
 from ..opm import calculate_map
 
@@ -33,6 +35,13 @@ class GaussianProcessOPM():
         self.prior_method = prior_method
 
         self.kernel = kernel
+        self.kernel_params = {}
+
+        self.prior = None
+        self.noise = None
+
+        self.K_post = None
+        self.mu_post = None
 
     def fit_prior(self):
         """ Learn a (low-rank) represenation of the prior covariance.
@@ -70,13 +79,12 @@ class GaussianProcessOPM():
 
         return self.kernel_params
 
-    def fit_posterior(self, stimuli, responses, noise_cov):
+    def fit_posterior(self, stimuli, responses):
         """ Given a set of stimuli and responses, compute the posterior mean and covariance
         
         Args:
             stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
             responses: N_cond x N_rep x n_x x n_y array, responses from an experiment
-            noise_cov: n x n array, noise covariance matrix
         
         Returns:
             self.mu_post, self.K_post: posterior mean and covariance
@@ -89,18 +97,19 @@ class GaussianProcessOPM():
         ny = responses.shape[3]
         n = nx * ny
 
-        G = self.prior.G
-        K = G @ G.T + self.prior.D
-        beta = 2 / N
+        # G = self.prior.G
+        # K = G @ G.T + self.prior.D
+        # beta = 2 / N
 
-        S = np.linalg.inv(noise_cov)
+        # S = np.linalg.inv(noise_cov)
 
         # calculate empirical map
-        mhat = calculate_map(responses, stimuli).reshape(n * d, 1)
+        mhat = calculate_map(responses, stimuli).reshape((d, n)).T
 
-        K_post_c = K - 1 / beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
+        # K_post_c = K - 1 / beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
 
-        self.K_post = np.kron(np.eye(d), K_post_c)
+        # self.K_post = np.kron(np.eye(d), K_post_c)
+        # self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
 
         # inefficient version (keeping the comment for readability)
         # K_post = np.linalg.inv(np.linalg.inv(K_m) + np.kron(N/2 * np.eye(d), K_e))
@@ -112,7 +121,8 @@ class GaussianProcessOPM():
 
         # TODO: this can be made more efficient by leveraging the low-rank stuff
 
-        self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
+        self.mu_post = premult_by_postcov(mhat, N, prior=self.prior, noise=self.noise).T
+        self.mu_post = self.mu_post.reshape((d, nx, ny))
 
         return self.mu_post, self.K_post
 
@@ -191,9 +201,9 @@ class GaussianProcessOPM():
             print('*** Fitting posterior ***')
 
         if type(noise) is np.ndarray:
+            self.noise = FixedNoise(noise)
             # given noise covariance matrix
-            self.fit_posterior(stimuli, responses, noise)
-
+            self.fit_posterior(stimuli, responses)
 
         else:
             if noise_kwargs is None:
