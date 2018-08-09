@@ -1,8 +1,9 @@
 import numpy as np
 
+
 def ridge_cholesky(A, maxtries=5):
     jitter = np.diag(A).mean() * 1e-6
-    
+
     num_tries = 1
     while num_tries <= maxtries and np.isfinite(jitter):
         try:
@@ -13,7 +14,7 @@ def ridge_cholesky(A, maxtries=5):
         finally:
             num_tries += 1
     raise np.linalg.LinAlgError("Not positive definite, even with jitter.")
-    
+
     return jitter
 
 
@@ -43,32 +44,32 @@ class ICD:
         Returns:
             G (n x self.rank)
         """
-        
+
         n = x.shape[0]
-        
+
         # precompute diagonal elements
         D = np.zeros(x.shape[0])
         for k in range(n):
             D[k] = kernel(x[k], x[k], **kernel_kwargs)
-            
+
         # add ridge to diagonal (for numerical stability)
         D += np.mean(D) * ridge
-            
+
         # initialize result matrix
         G = np.zeros((n, self.rank))
 
         # list of remaining columns
         J = set(range(n))
         for i in range(self.rank):
-            
+
             # find best new element
             jstar = np.argmax(D)
             J.remove(jstar)
             j = list(J)
-            
+
             # set current diagonal element
             G[jstar, i] = np.sqrt(D[jstar])
-            
+
             # calculate the i'th column
             newcol = np.zeros(len(j))
             for l in range(len(j)):
@@ -76,9 +77,9 @@ class ICD:
 
             # update the i'th column
             G[j, i] = 1.0 / G[jstar, i] * (newcol - G[j, :] @ G[jstar, :].T)
-            
+
             # update the diagonal elements
-            D[j] = D[j] - (G[j, i]**2).ravel()
+            D[j] = D[j] - (G[j, i] ** 2).ravel()
 
             # eliminate selected pivot
             D[jstar] = 0
@@ -87,11 +88,10 @@ class ICD:
             if np.sum(D) < self.tol or i + 1 == self.rank:
                 break
 
-        self.G = G[:, :i+1]
+        self.G = G[:, :i + 1]
         self.trained = True
-        
-        return self.G
 
+        return self.G
 
     def __call__(self, i, j):
         """ Access portions of K = GG' at indices i, j.
@@ -103,7 +103,6 @@ class ICD:
         if not self.trained:
             raise RuntimeError('Call train(...) first!')
         return self.G[i, :] @ self.G[j, :].T
-
 
     def __getitem__(self, idx):
         """ Access portions of K = GG'

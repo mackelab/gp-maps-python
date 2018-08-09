@@ -1,1 +1,1 @@
-from .gp import GaussianProcessOPM, prior_covariance
+from .gp import GaussianProcessOPM

@@ -5,6 +5,7 @@ from scipy.ndimage import filters
 
 from .pinwheels import plot_pinwheels
 
+
 def make_opm(size, sigma=4., k=2., alpha=1.):
     """ Generate an orientation preference map (to be used as a fake ground truth). 
      
@@ -17,24 +18,25 @@ def make_opm(size, sigma=4., k=2., alpha=1.):
     Returns:
         m: complex np.array with shape (size, size)
     """
-    
+
     if isinstance(size, int):
         sx, sy = size, size
     else:
         sx, sy = size
-    
+
     # generate white noise for real and imaginary map
     a = np.random.randn(sx, sy)
     b = np.random.randn(sx, sy)
-    
+
     # apply difference of Gaussians filter to both maps
     a = alpha * filters.gaussian_filter(a, sigma) - alpha * filters.gaussian_filter(a, k * sigma)
     b = alpha * filters.gaussian_filter(b, sigma) - alpha * filters.gaussian_filter(b, k * sigma)
-    
+
     # combine real and imaginary parts
     m = a + 1j * b
-    
+
     return m
+
 
 def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade=False, rmin=10, rmax=80):
     """ Plot an orientation preference map m.
@@ -47,21 +49,21 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
     Returns:
         f, ax: figure and axes of the plot
     """
-    
+
     if np.iscomplex(m).any():
         # compute the preferred orientation (argument)
         # and scale -> theta [0, 180]
         theta = 0.5 * (np.angle(m) + np.pi)
     else:
         theta = m
-    
+
     f, ax = plt.subplots()
 
     r = np.abs(m)
 
-    cmap = cm.get_cmap('hsv', 128)
+    colormap = cm.get_cmap(cmap, 128)
 
-    theta_rgb = cmap(theta / np.pi)
+    theta_rgb = colormap(theta / np.pi)
 
     if shade:
         rmin = np.percentile(r, rmin)
@@ -70,8 +72,7 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
         r = np.maximum(r, rmin)
         r = (r - rmin) / (rmax - rmin)
         for i in range(3):
-            theta_rgb[:,:,i] = theta_rgb[:,:,i] + (1 - theta_rgb[:,:,i]) * (1 - r)
-
+            theta_rgb[:, :, i] = theta_rgb[:, :, i] + (1 - theta_rgb[:, :, i]) * (1 - r)
 
     # plot data and adjust axes
     im = ax.imshow(theta, cmap=cmap)
@@ -86,9 +87,9 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
     cb.set_ticklabels(labels)
     ax.set_xticks([])
     ax.set_yticks([])
-    
+
     ax.set_title(title)
-    
+
     if pinwheels:
         if not np.iscomplex(m).any():
             raise ValueError('Map must be complex in order to compute pinwheels')
@@ -96,6 +97,7 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
             plot_pinwheels(m, ax)
 
     return f, ax
+
 
 def plot_amplitude_map(m, cmap='jet', title='Amplitude'):
     """ Plot the amplitude of an orientation preference map m.
@@ -109,28 +111,25 @@ def plot_amplitude_map(m, cmap='jet', title='Amplitude'):
         f, ax: figure and axes of the plot
     
     """
-    
+
     if np.iscomplex(m).any():
         # compute the modulus of the orientation map
         A = np.abs(m)
     else:
         A = m
-        
+
     f, ax = plt.subplots()
 
     im = ax.imshow(A, cmap=cmap)
-    
 
     cb = f.colorbar(im, ax=ax)
 
     ax.set_xticks([])
     ax.set_yticks([])
-    
+
     ax.set_title(title)
 
     return f, ax
-
-
 
 
 def calculate_map(responses, stimuli):
@@ -142,23 +141,22 @@ def calculate_map(responses, stimuli):
         
     Returns: estimated map components: d x n_x x n_y array 
     """
+
     V = stimuli
     d = V.shape[2]
     R = responses
     N_c, N_r, nx, ny = R.shape
     N = N_c * N_r
     n = int(R.size / N)
-    
-    V = V.reshape((N,d))
-    
-    # least squares estimate of real and imaginary components of the map
-    M_flat = np.linalg.inv(V.T @ V) @ V.T @ R.reshape((N,n))
 
-        
+    V = V.reshape((N, d))
+
+    # least squares estimate of real and imaginary components of the map
+    M_flat = np.linalg.inv(V.T @ V) @ V.T @ R.reshape((N, n))
+
     # reshape map into three
     M = np.zeros((d, nx, ny))
     for i, a in enumerate(M_flat):
         M[i] = a.reshape(nx, ny)
-        
+
     return M
-    
