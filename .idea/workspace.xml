@@ -2,9 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bcd488a5-d1c9-4162-bd87-d117f93f1733" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BayesianOPM.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/BayesianOPM.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/opm/gp/gp.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/gp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opm/gp/lowrank.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/lowrank.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/opm/gp/noise.py" beforeDir="false" afterPath="$PROJECT_DIR$/opm/gp/noise.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -16,7 +17,7 @@
     <session id="607320048">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="1" />
+          <entry key="project.closed" value="2" />
           <entry key="project.open.time.4" value="1" />
           <entry key="project.open.time.7" value="1" />
           <entry key="project.opened" value="2" />
@@ -25,13 +26,13 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="dummy" value="16" />
-          <entry key="py" value="1438" />
+          <entry key="py" value="1833" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="16" />
-          <entry key="Python" value="1438" />
+          <entry key="Python" value="1833" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -53,7 +54,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opm/opm.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2070">
+            <state relative-caret-position="508">
               <caret line="143" selection-start-line="143" selection-end-line="143" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
@@ -77,7 +78,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opm/response.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="270">
+            <state relative-caret-position="15">
               <caret line="18" column="23" selection-start-line="18" selection-start-column="23" selection-end-line="18" selection-end-column="23" />
             </state>
           </provider>
@@ -86,8 +87,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/opm/gp/gp.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="671">
-              <caret line="124" column="54" selection-start-line="124" selection-start-column="54" selection-end-line="124" selection-end-column="54" />
+            <state relative-caret-position="330">
+              <caret line="184" lean-forward="true" selection-start-line="184" selection-end-line="184" />
               <folding>
                 <element signature="e#0#35#0" expanded="true" />
               </folding>
@@ -107,11 +108,12 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/opm/gp/noise.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="42" selection-start-line="9" selection-start-column="42" selection-end-line="9" selection-end-column="42" />
+            <state relative-caret-position="703">
+              <caret line="60" column="37" selection-start-line="60" selection-start-column="37" selection-end-line="60" selection-end-column="37" />
               <folding>
-                <marker date="1533814902389" expanded="true" signature="38:274" ph="..." />
-                <marker date="1533814902389" expanded="true" signature="294:299" ph="..." />
+                <element signature="e#0#18#0" expanded="true" />
+                <marker date="1533818499532" expanded="true" signature="86:331" ph="..." />
+                <marker date="1533818499532" expanded="true" signature="351:356" ph="..." />
               </folding>
             </state>
           </provider>
@@ -134,8 +136,8 @@
         <option value="$PROJECT_DIR$/opm/pinwheels.py" />
         <option value="$PROJECT_DIR$/opm/response.py" />
         <option value="$PROJECT_DIR$/opm/opm.py" />
-        <option value="$PROJECT_DIR$/opm/gp/noise.py" />
         <option value="$PROJECT_DIR$/opm/gp/lowrank.py" />
+        <option value="$PROJECT_DIR$/opm/gp/noise.py" />
         <option value="$PROJECT_DIR$/opm/gp/gp.py" />
       </list>
     </option>
@@ -206,7 +208,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1920" height="1044" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" side_tool="true" />
       <window_info active="true" content_ui="combo" id="Project" order="1" visible="true" weight="0.18028466" />
@@ -242,7 +243,13 @@
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/gp/match_radial_component.py">
-      <provider selected="true" editor-type-id="text-editor" />
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <folding>
+            <element signature="e#0#36#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/__init__.py">
       <provider selected="true" editor-type-id="text-editor" />
@@ -269,16 +276,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/opm/opm.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2070">
-          <caret line="143" selection-start-line="143" selection-end-line="143" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/opm/pinwheels.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="465">
@@ -291,18 +288,29 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/response.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
+        <state relative-caret-position="15">
           <caret line="18" column="23" selection-start-line="18" selection-start-column="23" selection-end-line="18" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/opm/opm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="508">
+          <caret line="143" selection-start-line="143" selection-end-line="143" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/gp/noise.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="42" selection-start-line="9" selection-start-column="42" selection-end-line="9" selection-end-column="42" />
+        <state relative-caret-position="703">
+          <caret line="60" column="37" selection-start-line="60" selection-start-column="37" selection-end-line="60" selection-end-column="37" />
           <folding>
-            <marker date="1533814902389" expanded="true" signature="38:274" ph="..." />
-            <marker date="1533814902389" expanded="true" signature="294:299" ph="..." />
+            <element signature="e#0#18#0" expanded="true" />
+            <marker date="1533818499532" expanded="true" signature="86:331" ph="..." />
+            <marker date="1533818499532" expanded="true" signature="351:356" ph="..." />
           </folding>
         </state>
       </provider>
@@ -316,8 +324,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/opm/gp/gp.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="671">
-          <caret line="124" column="54" selection-start-line="124" selection-start-column="54" selection-end-line="124" selection-end-column="54" />
+        <state relative-caret-position="330">
+          <caret line="184" lean-forward="true" selection-start-line="184" selection-end-line="184" />
           <folding>
             <element signature="e#0#35#0" expanded="true" />
           </folding>

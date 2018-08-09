@@ -2,7 +2,7 @@ from .kernels import fixed_k_mexhat
 from .helpers import get_2d_indices
 from .match_radial_component import match_radial_component
 from .prior import LowRankPrior
-from .noise import FixedNoise
+from .noise import FixedNoise, LowRankNoise
 from .lowrank import premult_by_postcov
 
 from ..opm import calculate_map
@@ -126,37 +126,6 @@ class GaussianProcessOPM():
 
         return self.mu_post, self.K_post
 
-    def learn_noise_model(self, V, R, mu, **noise_kwargs):
-        """ Fit the noise model given the posterior mean
-
-        Args:
-            V: stimuli, N_cond x N_rep x d array, stimulus conditions for each trial
-            R: responses, N_cond x N_rep x n_x x n_y array, responses from an experiment
-            mu: posterior mean
-            **noise_kwargs: contains 'method' and 'q'
-
-        Returns:
-            sigma, n x n noise covariance matrix
-        """
-        d = V.shape[2]
-        N = R.shape[0] * R.shape[1]
-        n = R.shape[2] * R.shape[3]
-
-        # compute residuals
-        z = R.reshape(N, n) - V.reshape(N, d) @ mu.reshape(d, n)
-
-        if noise_kwargs['method'] == 'factoran':
-            # fit factor analysis model
-            fa = FactorAnalysis(n_components=noise_kwargs['q'])
-            fa.fit(z)
-            sigma = fa.get_covariance()
-
-        elif noise_kwargs['method'] == 'indep':
-            # pixel variance across trials
-            sigma = np.diag(np.var(z, axis=0))
-
-        return sigma
-
     def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
@@ -214,31 +183,23 @@ class GaussianProcessOPM():
             noise_kwargs.setdefault('q', 2)
             noise_kwargs.setdefault('method', noise)
 
-            # compute initial estimate, assuming the whole signal is noise
-            sigma_noise_init = np.zeros((n, n))
-            for R_i in responses.reshape(N_cond, N_rep, -1):
-                C_i = np.cov(R_i.T)
-                sigma_noise_init += C_i
-
-            sigma_noise_init /= N_cond
-
             # iterative noise fitting procedure
             for i in range(noise_kwargs['iterations']):
 
                 if verbose:
                     print('Fitting noise model: iteration {}'.format(i + 1))
 
-                if i == 0:
-                    # in the first step use the initial estimate
-                    mu, _ = self.fit_posterior(stimuli, responses, sigma_noise_init)
+                self.noise = LowRankNoise(method=noise_kwargs['method'], q=noise_kwargs['q'])
 
-                # learn the noise model (either indep or factoran) given current posterior mean
-                sigma_noise = self.learn_noise_model(V=stimuli, R=responses, mu=mu, **noise_kwargs)
+                if i == 0:
+                    # learn the noise model (either indep or factoran) assuming that the whole signal is noise
+                    self.noise.fit(V=stimuli, R=responses)
+                else:
+                    # learn the noise model (either indep or factoran) given current posterior mean
+                    self.noise.fit(V=stimuli, R=responses, mu=mu)
 
                 # get updated estimate of posterior mean using current estimate of noise covariance
-                mu, _ = self.fit_posterior(stimuli, responses, sigma_noise)
-
-            self.noise_cov = sigma_noise
+                mu, _ = self.fit_posterior(stimuli, responses)
 
         return self.mu_post
 
