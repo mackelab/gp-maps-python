@@ -79,7 +79,7 @@ class GaussianProcessOPM():
 
         return self.kernel_params
 
-    def fit_posterior(self, stimuli, responses):
+    def fit_posterior(self, stimuli, responses, calc_postcov=False):
         """ Given a set of stimuli and responses, compute the posterior mean and covariance
         
         Args:
@@ -97,18 +97,21 @@ class GaussianProcessOPM():
         ny = responses.shape[3]
         n = nx * ny
 
-        # G = self.prior.G
-        # K = G @ G.T + self.prior.D
-        # beta = 2 / N
-
-        # S = np.linalg.inv(noise_cov)
+        
 
         # calculate empirical map
         mhat = calculate_map(responses, stimuli).reshape((d, n)).T
+        
+        if calc_postcov:
+            G = self.prior.G
+            K = G @ G.T + self.prior.D
+            beta = 2 / N
 
-        # K_post_c = K - 1 / beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
-
-        # self.K_post = np.kron(np.eye(d), K_post_c)
+            S = np.linalg.inv(self.noise.covariance)
+            K_post_c = K - 1 / beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
+        
+            self.K_post = np.kron(np.eye(d), K_post_c)
+            
         # self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
 
         # inefficient version (keeping the comment for readability)
@@ -126,7 +129,7 @@ class GaussianProcessOPM():
 
         return self.mu_post, self.K_post
 
-    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False):
+    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
             - Fit prior covariance
@@ -172,7 +175,7 @@ class GaussianProcessOPM():
         if type(noise) is np.ndarray:
             self.noise = FixedNoise(noise)
             # given noise covariance matrix
-            self.fit_posterior(stimuli, responses)
+            self.fit_posterior(stimuli, responses, calc_postcov)
 
         else:
             if noise_kwargs is None:
@@ -197,9 +200,12 @@ class GaussianProcessOPM():
                 else:
                     # learn the noise model (either indep or factoran) given current posterior mean
                     self.noise.fit(V=stimuli, R=responses, mu=mu)
-
+                
                 # get updated estimate of posterior mean using current estimate of noise covariance
-                mu, _ = self.fit_posterior(stimuli, responses)
+                if i == noise_kwargs['iterations'] - 1 and calc_postcov: # calculate the full posterior covariance
+                    mu, _ = self.fit_posterior(stimuli, responses, calc_postcov)
+                else:
+                    mu, _ = self.fit_posterior(stimuli, responses)
 
         return self.mu_post
 

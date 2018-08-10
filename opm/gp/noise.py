@@ -1,7 +1,15 @@
 import numpy as np
 from sklearn.decomposition import FactorAnalysis
 
-class FixedNoise:
+
+class NoiseModel:
+    
+    @property
+    def covariance(self):
+        return self.D + self.G @ self.G.T
+
+
+class FixedNoise(NoiseModel):
 
     def __init__(self, sigma):
         """ Initialize D as variance times identity and G as zeros
@@ -9,15 +17,17 @@ class FixedNoise:
         Args:
             sigma: noise covariance matrix
         """
+        super().__init__()
 
         self.D = sigma
 
         self.G = np.zeros((self.D.shape[0], 1))
 
 
-class LowRankNoise:
+class LowRankNoise(NoiseModel):
 
     def __init__(self, method, q):
+        super().__init__()
         self.method = method
         self.q = q
 
