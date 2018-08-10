@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def lowrank_leftdiv(x, D, G, invR=None, H=None):
+def lowrank_leftdiv(x, D, G, invR=None, H=None, blocksize=1000):
     """ Calculate (D + G R H')^{-1} x
 
     Args:
@@ -14,7 +14,9 @@ def lowrank_leftdiv(x, D, G, invR=None, H=None):
     Returns:
         (D + G R H')^{-1} x
     """
-    N, q = G.shape
+    
+    _, N = x.shape
+    n, q = G.shape
 
     if H is None:
         H = G
@@ -22,15 +24,55 @@ def lowrank_leftdiv(x, D, G, invR=None, H=None):
     if invR is None:
         invR = np.eye(q)
 
-    y = np.linalg.solve(D, x)
-    y = H.T @ y
+    
+    if x.shape[1] <= blocksize:
+        y = np.linalg.solve(D, x)
+        y = G.T @ y
+    
+    
+    else:
+        y = np.zeros(x.shape)
+        y2 = np.zeros((q,N))
+        numblocks = int(np.ceil(x.shape[1] / blocksize))
+        for k in range(1, numblocks + 1):
+            index = np.arange((k-1) * blocksize + 1, np.minimum(k * blocksize, x.shape[1])+1)
+            index -= 1
+            y[:,index] = np.linalg.solve(D, x[:,index])
+            y2[:,index] = H.T @ y[:,index]
+        y = y2
+    
+    
 
-    innerblock = np.linalg.solve(D, G)
-    innerblock = invR + H.T @ innerblock
+    if G.shape[1] <= blocksize:
+        innerblock= np.linalg.solve(D, G)
+        innerblock = invR + H.T @ innerblock
 
-    y = np.linalg.solve(innerblock, y)
-    y = G @ y
-    y = np.linalg.solve(D, x - y)
+    
+    else:
+        numblocks = int(np.ceil(G.shape[1] / blocksize))
+        innerblock = np.zeros(G.shape)
+        for k in range(1, numblocks + 1):
+            index = np.arange((k-1) * blocksize + 1, np.minimum(k * blocksize, G.shape[1])+1)
+            index -= 1
+            innerblock[:,index] = np.linalg.solve(D, G[:,index])
+
+        innerblock = invR + H.T @ innerblock
+
+                                           
+    if x.shape[1] <= blocksize:
+        y = np.linalg.solve(innerblock, y)
+        y = G @ y
+        y = np.linalg.solve(D, x-y)
+    
+    else:
+        numblocks = int(np.ceil(x.shape[1] / blocksize))
+        y2 = np.zeros(x.shape)
+        for k in range(1, numblocks + 1):
+            index = np.arange((k-1) * blocksize + 1, np.minimum(k * blocksize, x.shape[1])+1)
+            index -= 1
+            y2[:,index] = G @ np.linalg.solve(innerblock, y[:,index])
+            y2[:,index] = np.linalg.solve(D, (x[:,index]-y2[:,index]))
+        y=y2
 
     return y
 
