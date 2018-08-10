@@ -3,7 +3,7 @@ from .helpers import get_2d_indices
 from .match_radial_component import match_radial_component
 from .prior import LowRankPrior
 from .noise import FixedNoise, LowRankNoise
-from .lowrank import premult_by_postcov
+from .lowrank import calc_postmean
 
 from ..opm import calculate_map
 
@@ -123,8 +123,7 @@ class GaussianProcessOPM():
         #    vr += np.kron(v, r)[:,np.newaxis]
 
         # TODO: this can be made more efficient by leveraging the low-rank stuff
-
-        self.mu_post = premult_by_postcov(mhat, N, prior=self.prior, noise=self.noise).T
+        self.mu_post = calc_postmean(mhat, N, prior=self.prior, noise=self.noise).T
         self.mu_post = self.mu_post.reshape((d, nx, ny))
 
         return self.mu_post, self.K_post

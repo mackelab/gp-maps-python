@@ -3,10 +3,20 @@ from sklearn.decomposition import FactorAnalysis
 
 
 class NoiseModel:
+    """ Base class for noise models, defining noise covariance and variance based on the low-rank structure.
+    """
     
     @property
     def covariance(self):
+        """ Covariance matrix: D + GG'
+        """
         return self.D + self.G @ self.G.T
+    
+    @property
+    def variance(self):
+        """ Variance (diagonal of covariance matrix)
+        """
+        return np.diag(self.covariance)
 
 
 class FixedNoise(NoiseModel):
@@ -27,6 +37,12 @@ class FixedNoise(NoiseModel):
 class LowRankNoise(NoiseModel):
 
     def __init__(self, method, q):
+        """ Initialize method and dimensionality
+        
+        Args:
+            method: noise fitting method (can be either 'factoran' or 'indep')
+            q: rank of GG', only needed for factor analysis model
+        """
         super().__init__()
         self.method = method
         self.q = q
@@ -37,15 +53,15 @@ class LowRankNoise(NoiseModel):
     def fit(self, V, R, mu=None):
         """ Fit the noise model given the posterior mean
 
-                Args:
-                    V: stimuli, N_cond x N_rep x d array, stimulus conditions for each trial
-                    R: responses, N_cond x N_rep x n_x x n_y array, responses from an experiment
-                    mu: posterior mean
-                    **noise_kwargs: contains 'method' and 'q'
+        Args:
+            V: stimuli, N_cond x N_rep x d array, stimulus conditions for each trial
+            R: responses, N_cond x N_rep x n_x x n_y array, responses from an experiment
+            mu: posterior mean
+            **noise_kwargs: contains 'method' and 'q'
 
-                Returns:
-                    sigma, n x n noise covariance matrix
-                """
+        Returns:
+            sigma, n x n noise covariance matrix
+        """
 
         d = V.shape[2]
         N = R.shape[0] * R.shape[1]

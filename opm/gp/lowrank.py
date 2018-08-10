@@ -67,7 +67,7 @@ def lowrank_leftdiv_double(x, D, G1, invR1, H1, G2, invR2, H2):
     y = H2.T @ y
     innerblock = invR2 + (H2.T @ lowrank_leftdiv(G2, D, G1, invR1, H1))
     y = np.linalg.solve(innerblock, y)
-    y = G2 @ y;
+    y = G2 @ y
     y = x - y
     y = lowrank_leftdiv(y, D, G1, invR1, H1)
 
@@ -127,3 +127,9 @@ def premult_by_postcov(x, N, prior, noise):
 
     y = lowrank_leftmult(y, prior.D, prior.G, R=None, H=None)
     return y
+
+
+def calc_postmean(mhat, N, prior, noise):
+    
+    mhat2 = lowrank_leftdiv(mhat, noise.D, noise.G)
+    return premult_by_postcov(mhat2, N, prior, noise)
