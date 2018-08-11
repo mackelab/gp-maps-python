@@ -1,0 +1,26 @@
+from scipy.interpolate import interp2d
+import numpy as np
+
+# my naive implementation, still not really smooth
+def naive_find_pinwheels(m, res=100):
+    # size of the map
+    sizex, sizey = m.shape
+
+    # interpolate the 2d map (real and imaginary part)
+    x, y = np.arange(sizex), np.arange(sizey)
+    ai = interp2d(x, y, np.real(m), kind='linear')
+    bi = interp2d(x, y, np.imag(m), kind='linear')
+
+    # points at higher resolution to evaluate the interpolated function at
+    xx, yy = np.linspace(0, m.shape[0], sizex * res), np.linspace(0, m.shape[1], sizey * res)
+
+    # find zero crossings in real and imaginary part
+    zca = np.diff(np.sign(ai(xx, yy))) != 0
+    zcb = np.diff(np.sign(bi(xx, yy))) != 0
+
+    zc = np.logical_or(zca, zcb)
+
+    # "indices" of zero crossings
+    zcy, zcx = np.where(zc)
+
+    return zcx / res, zcy / res
