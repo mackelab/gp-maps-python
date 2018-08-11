@@ -2,6 +2,15 @@ import numpy as np
 
 
 def ridge_cholesky(A, maxtries=5):
+    """ Compute a cholesky decomposition of the matrix a, adding a ridge sufficient to make A positive definite
+    
+    Args:
+        A: the matrix to be decomposed
+        maxtries: the ridge starts as 1e-6 and icreases up to 1e(-6 + maxtries)
+    
+    Return:
+        L (A = LL') if successful else the current ridge element
+    """
     jitter = np.diag(A).mean() * 1e-6
 
     num_tries = 1

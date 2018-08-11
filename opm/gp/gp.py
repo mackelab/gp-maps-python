@@ -87,7 +87,7 @@ class GaussianProcessOPM():
             responses: N_cond x N_rep x n_x x n_y array, responses from an experiment
         
         Returns:
-            self.mu_post, self.K_post: posterior mean and covariance
+            self.mu_post, self.K_post: posterior mean and covariance (K_post is None if not calc_postcov)
         """
 
         N = stimuli.shape[0] * stimuli.shape[1]
@@ -96,8 +96,6 @@ class GaussianProcessOPM():
         nx = responses.shape[2]
         ny = responses.shape[3]
         n = nx * ny
-
-        
 
         # calculate empirical map
         mhat = calculate_map(responses, stimuli).reshape((d, n)).T
@@ -122,7 +120,7 @@ class GaussianProcessOPM():
         # for v, r in zip(V, R):
         #    vr += np.kron(v, r)[:,np.newaxis]
 
-        # TODO: this can be made more efficient by leveraging the low-rank stuff
+        # use the low-rank approximations of prior and noise to compute the posterior mean (see lowrank.py)
         self.mu_post = calc_postmean(mhat, N, prior=self.prior, noise=self.noise).T
         self.mu_post = self.mu_post.reshape((d, nx, ny))
 

@@ -1,6 +1,6 @@
 import numpy as np
 from .kernels import mexican_hat_kernel
-from .linalg import ICD
+from .cholesky import ICD, ridge_cholesky
 
 
 def prior_covariance(idx, kernel, **kwargs):
