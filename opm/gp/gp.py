@@ -43,12 +43,22 @@ class GaussianProcessOPM():
         self.K_post = None
         self.mu_post = None
 
-    def fit_prior(self):
+    def fit_prior(self, stimuli, responses, verbose=False):
         """ Learn a (low-rank) represenation of the prior covariance.
         
         Return:
             self.prior (fitted LowRankPrior object)
         """
+        
+        if verbose:
+            print('*** Fitting prior ***')
+        
+        if not self.kernel_params:
+            self.optimize(stimuli, responses, verbose=verbose)
+        
+        if verbose:
+            print('Calculating the prior from scratch..')
+            
         self.prior = LowRankPrior(self.idx, method=self.prior_method, rank=self.rank)
         self.prior.fit(kernel=self.kernel, **self.kernel_params)
         return self.prior
@@ -64,6 +74,9 @@ class GaussianProcessOPM():
         Returns:
             self.kernel_params, dict containing the names and optimized values of the hyperparameters
         """
+        
+        if verbose:
+            print('Estimating prior hyperparameters:')
 
         # get names and default values for hyperparameters
         s = inspect.signature(self.kernel)
@@ -155,16 +168,14 @@ class GaussianProcessOPM():
         N_rep = responses.shape[1]
         N = N_cond * N_rep
         n = responses.shape[2] * responses.shape[3]
-
-        if verbose:
-            print('*** Estimating prior hyperparameters ***')
+        
 
         self.optimize(stimuli, responses, verbose=verbose)
-
-        if verbose:
-            print('*** Fitting prior ***')
-
-        self.fit_prior()
+        
+        if self.prior is None:
+            self.fit_prior(stimuli, responses, verbose=verbose)
+        elif verbose:
+            print('Using previously fit prior..')
 
         if verbose:
             print('*** Fitting posterior ***')
