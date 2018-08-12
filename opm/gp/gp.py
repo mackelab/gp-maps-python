@@ -193,24 +193,34 @@ class GaussianProcessOPM():
             noise_kwargs.setdefault('iterations', 3)
             noise_kwargs.setdefault('q', 2)
             noise_kwargs.setdefault('method', noise)
+            noise_kwargs.setdefault('max_iter', 1000)
+            noise_kwargs.setdefault('tol', 0.01)
+            noise_kwargs.setdefault('iterated_power', 3)
+            
 
             # iterative noise fitting procedure
             for i in range(noise_kwargs['iterations']):
 
                 if verbose:
                     print('Fitting noise model: iteration {}'.format(i + 1))
+                    
+                if i >= 1:
+                    noise_var_init = self.noise.variance
+                else:
+                    noise_var_init = None
 
                 self.noise = LowRankNoise(method=noise_kwargs['method'], q=noise_kwargs['q'])
 
-                if i == 0:
-                    # learn the noise model (either indep or factoran) assuming that the whole signal is noise
-                    self.noise.fit(V=stimuli, R=responses)
-                else:
-                    # learn the noise model (either indep or factoran) given current posterior mean
-                    self.noise.fit(V=stimuli, R=responses, mu=mu)
+                # learn the noise model (either indep or factoran) given the posterior mean
+                # for i==0, the posterior mean is None, thus we assume all the signal is noise
+                self.noise.fit(V=stimuli, R=responses, mu=self.mu_post, noise_variance_init=noise_var_init,
+                              max_iter=noise_kwargs['max_iter'], tol=noise_kwargs['tol'], 
+                               iterated_power=noise_kwargs['iterated_power'])
+
                 
                 # get updated estimate of posterior mean using current estimate of noise covariance
-                if i == noise_kwargs['iterations'] - 1 and calc_postcov: # calculate the full posterior covariance
+                if i == noise_kwargs['iterations'] - 1 and calc_postcov: 
+                    # calculate the full posterior covariance (only in the last iteration)
                     mu, _ = self.fit_posterior(stimuli, responses, calc_postcov)
                 else:
                     mu, _ = self.fit_posterior(stimuli, responses)

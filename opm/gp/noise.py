@@ -6,11 +6,16 @@ class NoiseModel:
     """ Base class for noise models, defining noise covariance and variance based on the low-rank structure.
     """
     
+    def __init__(self):
+        self._covariance = None
+    
     @property
     def covariance(self):
         """ Covariance matrix: D + GG'
         """
-        return self.D + self.G @ self.G.T
+        if self._covariance is None:
+            self._covariance = self.D + self.G @ self.G.T
+        return self._covariance
     
     @property
     def variance(self):
@@ -50,7 +55,7 @@ class LowRankNoise(NoiseModel):
         self.D = None
         self.G = None
 
-    def fit(self, V, R, mu=None):
+    def fit(self, V, R, mu=None, noise_variance_init=None, tol=0.01, max_iter=1000, iterated_power=3):
         """ Fit the noise model given the posterior mean
 
         Args:
@@ -81,7 +86,8 @@ class LowRankNoise(NoiseModel):
 
         if self.method == 'factoran':
             # fit factor analysis model
-            fa = FactorAnalysis(n_components=self.q)
+            fa = FactorAnalysis(n_components=self.q, noise_variance_init=noise_variance_init,
+                   tol=tol, max_iter=max_iter, iterated_power=iterated_power)
             fa.fit(z)
             self.D = np.diag(fa.noise_variance_)
             self.G = fa.components_.T
