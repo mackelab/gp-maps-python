@@ -123,3 +123,4 @@ def plot_pinwheels(m, ax=None, color='white', linewidth=2):
         ax.plot(contour[:, 1], contour[:, 0], color=color, linewidth=linewidth)
 
     return c
+    
