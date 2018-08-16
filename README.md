@@ -2,7 +2,9 @@
 
 This package is a Python implementation of a Gaussian Process (GP) method for inferring cortical maps ([Macke et al., 2011](https://www.sciencedirect.com/science/article/pii/S1053811910007007)), based on their original [MATLAB-code](https://bitbucket.org/mackelab/gp_maps/). Compared to conventional (vector averaging) approaches, the method computes better maps from little data and can be used to quantify the uncertainty in an estimated orientation preference map (OPM). It also provides a principled way to choose the parameters in the smoothing step and incorporate inhomogeneous noise variances as well as noise correlations.
 
-The basic idea is to specify a prior over OPMs as a GP. This means that a-priori assumptions about correlations of the pixels in a map are specified as a covariance function K. In this case, we use a Difference of Gaussians (DoG) kernel. This covariance function encodes our assumptions that OPMs are smooth and have a semi-periodic structure. This prior is then updated via Bayes' rule with imaging data to obtain a smooth posterior estimate of an OPM. Supporting information on the method
+The basic idea is to specify a prior over OPMs as a GP. This means that a-priori assumptions about correlations of the pixels in a map are specified as a covariance function K. In this case, we use a Difference of Gaussians (DoG) kernel. This covariance function encodes our assumptions that OPMs are smooth and have a semi-periodic structure. This prior is then updated via Bayes' rule with imaging data to obtain a smooth posterior estimate of an OPM. 
+
+My notes on the method (including derivations not in the original paper) can be found [here](https://gitlab.com/dominikstrb/orientation_preference_maps/blob/master/SupportingInfo.pdf).
 
 A number of notebooks illustrate how to use the package:
 
