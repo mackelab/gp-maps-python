@@ -43,6 +43,12 @@ class LowRankPrior():
             self.rank = x.shape[0]
         else:
             self.rank = rank
+            
+        self._fit = False
+        
+    @property
+    def is_fit(self):
+        return self._fit
 
     def fit(self, kernel=mexican_hat_kernel, ridge=1e-4, **kernel_kwargs):
         """ Learn a (low-rank) prior.
@@ -80,6 +86,8 @@ class LowRankPrior():
                 prior_var_exact[k] = kernel(self.x[k], self.x[k], **kernel_kwargs)
 
             self.D = np.diag(prior_var_exact - prior_var_uncorrected + 2 * ridge)
+            
+        self._fit = True
 
     def __getitem__(self, idx):
         """ Access portions of K = GG'

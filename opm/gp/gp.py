@@ -37,7 +37,7 @@ class GaussianProcessOPM():
         self.kernel = kernel
         self.kernel_params = {}
 
-        self.prior = None
+        self.prior = LowRankPrior(self.idx, method=self.prior_method, rank=self.rank)
         self.noise = None
 
         self.K_post = None
@@ -59,7 +59,6 @@ class GaussianProcessOPM():
         if verbose:
             print('Calculating the prior from scratch..')
             
-        self.prior = LowRankPrior(self.idx, method=self.prior_method, rank=self.rank)
         self.prior.fit(kernel=self.kernel, **self.kernel_params)
         return self.prior
 
@@ -172,7 +171,7 @@ class GaussianProcessOPM():
 
         self.optimize(stimuli, responses, verbose=verbose)
         
-        if self.prior is None:
+        if not self.prior.is_fit:
             self.fit_prior(stimuli, responses, verbose=verbose)
         elif verbose:
             print('Using previously fit prior..')
