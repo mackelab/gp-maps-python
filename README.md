@@ -33,6 +33,7 @@ shows details about the GP method:
 serves as an illustration on how to use GPs to infer OPMs from real imaging data (replicating the results of Macke et al., 2011):
 
 - visualize inhomogeneous and correlated noise structure of the data
+- obtain smooth estimate based on "ground truth"
 - GP posterior inference on real data
 
 
