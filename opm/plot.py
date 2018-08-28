@@ -39,6 +39,11 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
         r = (r - rmin) / (rmax - rmin)
         for i in range(3):
             theta_rgb[:, :, i] = theta_rgb[:, :, i] + (1 - theta_rgb[:, :, i]) * (1 - r)
+        
+    
+    theta_rgb[:,:,3][np.isnan(theta)] = 0
+            
+
 
     # plot data and adjust axes
     im = ax.imshow(theta, cmap=cmap)
@@ -61,7 +66,7 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
             raise ValueError('Map must be complex in order to compute pinwheels')
         else:
             plot_pinwheels(m, ax)
-
+    
     return f, ax
 
 
