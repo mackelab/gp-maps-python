@@ -1,3 +1,6 @@
+# non-public data files
+data/avg_cat_data.mat
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
