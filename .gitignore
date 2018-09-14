@@ -1,5 +1,5 @@
-# non-public data files
-data/avg_cat_data.mat
+# experimental data files
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
