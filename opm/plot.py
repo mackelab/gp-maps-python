@@ -129,3 +129,55 @@ def plot_pinwheels(m, ax=None, color='white', linewidth=2):
 
     return c
     
+    
+def plot_orientation_histogram(m, weighted=False, bins=20, ax=None, polar=False, **kwargs):
+    
+    if not ax:
+        if polar:
+            f, ax = plt.subplots(subplot_kw={'projection':'polar'})
+        else:
+            f, ax = plt.subplots()
+    else:
+        f = None
+            
+    
+        
+    weights = np.abs(m).reshape(-1) if weighted else None
+    theta = (np.angle(m).reshape(-1) + np.pi) / 2
+    
+    if polar:
+        weights = np.append(weights, weights) if weighted else None
+        r, theta, patches = ax.hist(np.append(theta, theta + np.pi), range=(0, 2*np.pi), weights=weights,
+                                    bins=bins, **kwargs)
+    else:
+        ax.hist(theta / np.pi * 180, bins=bins, weights=weights, **kwargs)
+        ax.set_xticks([0, 45, 90, 135, 180])
+    
+    return f, ax
+
+
+def polar_histogram(x, ax=None, **kwargs):
+    """ Plot a histogram on polar coordinates (radius is relative frequency)
+    
+    Args:
+        x: np array containing the data
+        ax: pyplot axis to be plotted on. if not given, a new axis is created via subplots
+        kwargs: arguments passed to https://matplotlib.org/api/_as_gen/matplotlib.pyplot.hist.html, 
+                after setting default color
+    Returns:
+        r: frequency / density
+        theta: bin edges
+        patches: matplotlib patches objects
+    """
+    
+    # set default arguments for histogram
+    kwargs = dict({'color': 'white', 'edgecolor': 'C0'}, **kwargs)
+    
+    # if no ax is given
+    if not ax:
+        f, ax = plt.subplots(subplot_kw={'projection':'polar'})
+    
+    # do the plotting
+    r, theta, patches = ax.hist(np.append(x, x + np.pi), range=(0, 2*np.pi), **kwargs)
+    
+    return r, theta, patches
