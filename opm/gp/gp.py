@@ -37,14 +37,19 @@ class GaussianProcessOPM():
         self.K_post = None
         self.mu_post = None
 
-    def fit_prior(self, verbose=False):
+    def fit_prior(self, rank=None, method='icd', verbose=False):
         """ Learn a (low-rank) represenation of the prior covariance.
         
 
         Return:
             self.prior (fitted LowRankPrior object)
         """
+        
+        if not self.prior:
+            self.prior = LowRankPrior(self.idx, method=method, rank=rank)
             
+        if not self.kernel_params:
+            self.optimize(stimuli, responses, p0=prior_kwargs['p0'], verbose=verbose)
         
         if verbose:
             print('Calculating the prior from scratch..')
