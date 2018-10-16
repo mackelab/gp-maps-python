@@ -18,43 +18,33 @@ class GaussianProcessOPM():
     """ A Gaussian process used to infer an orientation preference map (OPM) from imaging data.
     """
 
-    def __init__(self, size, prior_rank, prior_method='icd', kernel=fixed_k_mexhat):
+    def __init__(self, size, kernel=fixed_k_mexhat):
         """ Initialize prior fitting method and dimensionalities
         
         Args:
             size: tuple (x, y) or int (results in square map)
-            prior_rank: rank of low-rank prior_approximation (only used if prior_method is given)
-            prior_method: can be either 'icd' or None
-            kernel: kernel function of structure f(x, y, **hyperparams). 
-                    defaults to mexican hat with sigma and and alpha as parameters and fixed k.
         """
         self.size = size
         self.idx = get_2d_indices(size)
 
-        self.rank = prior_rank
-        self.prior_method = prior_method
 
         self.kernel = kernel
         self.kernel_params = {}
 
-        self.prior = LowRankPrior(self.idx, method=self.prior_method, rank=self.rank)
+        self.prior = None
         self.noise = None
 
         self.K_post = None
         self.mu_post = None
 
-    def fit_prior(self, stimuli, responses, verbose=False):
+    def fit_prior(self, verbose=False):
         """ Learn a (low-rank) represenation of the prior covariance.
         
+
         Return:
             self.prior (fitted LowRankPrior object)
         """
-        
-        if verbose:
-            print('*** Fitting prior ***')
-        
-        if not self.kernel_params:
-            self.optimize(stimuli, responses, verbose=verbose)
+            
         
         if verbose:
             print('Calculating the prior from scratch..')
@@ -62,13 +52,14 @@ class GaussianProcessOPM():
         self.prior.fit(kernel=self.kernel, **self.kernel_params)
         return self.prior
 
-    def optimize(self, stimuli, responses, verbose=False):
+    def optimize(self, stimuli, responses, p0=None, verbose=False):
         """ Estimate the prior hyperparameters by matching them to the radial component 
             of the empirical map (see match_radial_components).
             
         Args:
             stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
             responses: N_cond x N_rep x n_x x n_y array, responses from an experiment 
+            p0: (dict) initial guess for the kernel hyperparameters
         
         Returns:
             self.kernel_params, dict containing the names and optimized values of the hyperparameters
@@ -80,7 +71,8 @@ class GaussianProcessOPM():
         # get names and default values for hyperparameters
         s = inspect.signature(self.kernel)
         hyperparams = list(s.parameters.values())[2:]
-        p0 = {p.name: p.default for p in hyperparams}
+        if not p0:
+            p0 = {p.name: p.default for p in hyperparams}
 
         p_opt = match_radial_component(responses, stimuli, p0=p0)
 
@@ -118,7 +110,7 @@ class GaussianProcessOPM():
             beta = 2 / N
 
             S = np.linalg.inv(self.noise.covariance)
-            K_post_c = K - 1 / beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.rank) + G.T @ S @ G) @ G.T @ S) @ K
+            K_post_c = K - 1 / beta * K @ (S - S @ G @ np.linalg.inv(beta * np.eye(self.prior.rank) + G.T @ S @ G) @ G.T @ S) @ K
         
             self.K_post = np.kron(np.eye(d), K_post_c)
             
@@ -138,7 +130,7 @@ class GaussianProcessOPM():
 
         return self.mu_post, self.K_post
 
-    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False):
+    def fit(self, stimuli, responses, rank=None, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False, **prior_kwargs):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
             - Fit prior covariance
@@ -168,11 +160,27 @@ class GaussianProcessOPM():
         N = N_cond * N_rep
         n = responses.shape[2] * responses.shape[3]
         
-
-        self.optimize(stimuli, responses, verbose=verbose)
         
+        if prior_kwargs is None:
+            prior_kwargs = {}
+            
+        prior_kwargs.setdefault('method', 'icd')
+        prior_kwargs.setdefault('p0', None)
+        
+
+        if not self.prior:
+            self.prior = LowRankPrior(self.idx, method=prior_kwargs['method'], rank=rank)
+            
+        if verbose:
+            print('*** Fitting prior ***')
+        
+        if not self.kernel_params:
+            self.optimize(stimuli, responses, p0=prior_kwargs['p0'], verbose=verbose)
+        
+            
         if not self.prior.is_fit:
-            self.fit_prior(stimuli, responses, verbose=verbose)
+            self.fit_prior(verbose=verbose)
+            
         elif verbose:
             print('Using previously fit prior..')
 
