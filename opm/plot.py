@@ -4,7 +4,7 @@ import matplotlib.cm as cm
 from skimage.measure import find_contours
 
 
-def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade=False, rmin=10, rmax=80):
+def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade=False, rmin=10, rmax=80, ax=None, colorbar=True):
     """ Plot an orientation preference map m.
     
     Args:
@@ -23,7 +23,10 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
     else:
         theta = m
 
-    f, ax = plt.subplots()
+    if ax is None:
+        f, ax = plt.subplots()
+    else:
+        f = ax.get_figure()
 
     r = np.abs(m)
 
@@ -51,11 +54,14 @@ def plot_opm(m, cmap='hsv', title='Preferred orientation', pinwheels=True, shade
     im.set_clim(0, np.pi)
     loc = np.linspace(0, np.pi, 5)
 
-    # label axes
-    labels = ['0', r'$\pi / 4$', r'$\pi / 2$', r'$3 \pi / 4$', r'$\pi$']
-    cb = f.colorbar(im, ax=ax)
-    cb.set_ticks(loc)
-    cb.set_ticklabels(labels)
+    # add colorbar
+    if colorbar:
+        labels = ['0', r'$\pi / 4$', r'$\pi / 2$', r'$3 \pi / 4$', r'$\pi$']
+        cb = f.colorbar(im, ax=ax)
+        cb.set_ticks(loc)
+        cb.set_ticklabels(labels)
+        
+    # remove axis labels
     ax.set_xticks([])
     ax.set_yticks([])
 
