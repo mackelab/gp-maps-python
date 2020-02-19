@@ -5,10 +5,10 @@ from sklearn.decomposition import FactorAnalysis
 class NoiseModel:
     """ Base class for noise models, defining noise covariance and variance based on the low-rank structure.
     """
-    
+
     def __init__(self):
         self._covariance = None
-    
+
     @property
     def covariance(self):
         """ Covariance matrix: D + GG'
@@ -16,7 +16,7 @@ class NoiseModel:
         if self._covariance is None:
             self._covariance = self.D + self.G @ self.G.T
         return self._covariance
-    
+
     @property
     def variance(self):
         """ Variance (diagonal of covariance matrix)
@@ -87,7 +87,7 @@ class LowRankNoise(NoiseModel):
         if self.method == 'factoran':
             # fit factor analysis model
             fa = FactorAnalysis(n_components=self.q, noise_variance_init=noise_variance_init,
-                   tol=tol, max_iter=max_iter, iterated_power=iterated_power)
+                                tol=tol, max_iter=max_iter, iterated_power=iterated_power)
             fa.fit(z)
             self.D = np.diag(fa.noise_variance_)
             self.G = fa.components_.T

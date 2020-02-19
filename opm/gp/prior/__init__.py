@@ -1,0 +1,1 @@
+from opm.gp.prior._prior import LowRankPrior, prior_covariance

@@ -14,7 +14,7 @@ def lowrank_leftdiv(x, D, G, invR=None, H=None, blocksize=1000):
     Returns:
         (D + G R H')^{-1} x
     """
-    
+
     _, N = x.shape
     n, q = G.shape
 
@@ -24,55 +24,51 @@ def lowrank_leftdiv(x, D, G, invR=None, H=None, blocksize=1000):
     if invR is None:
         invR = np.eye(q)
 
-    
     if x.shape[1] <= blocksize:
         y = np.linalg.solve(D, x)
         y = G.T @ y
-    
-    
+
+
     else:
         y = np.zeros(x.shape)
-        y2 = np.zeros((q,N))
+        y2 = np.zeros((q, N))
         numblocks = int(np.ceil(x.shape[1] / blocksize))
         for k in range(1, numblocks + 1):
-            index = np.arange((k-1) * blocksize + 1, np.minimum(k * blocksize, x.shape[1])+1)
+            index = np.arange((k - 1) * blocksize + 1, np.minimum(k * blocksize, x.shape[1]) + 1)
             index -= 1
-            y[:,index] = np.linalg.solve(D, x[:,index])
-            y2[:,index] = H.T @ y[:,index]
+            y[:, index] = np.linalg.solve(D, x[:, index])
+            y2[:, index] = H.T @ y[:, index]
         y = y2
-    
-    
 
     if G.shape[1] <= blocksize:
-        innerblock= np.linalg.solve(D, G)
+        innerblock = np.linalg.solve(D, G)
         innerblock = invR + H.T @ innerblock
 
-    
+
     else:
         numblocks = int(np.ceil(G.shape[1] / blocksize))
         innerblock = np.zeros(G.shape)
         for k in range(1, numblocks + 1):
-            index = np.arange((k-1) * blocksize + 1, np.minimum(k * blocksize, G.shape[1])+1)
+            index = np.arange((k - 1) * blocksize + 1, np.minimum(k * blocksize, G.shape[1]) + 1)
             index -= 1
-            innerblock[:,index] = np.linalg.solve(D, G[:,index])
+            innerblock[:, index] = np.linalg.solve(D, G[:, index])
 
         innerblock = invR + H.T @ innerblock
 
-                                           
     if x.shape[1] <= blocksize:
         y = np.linalg.solve(innerblock, y)
         y = G @ y
-        y = np.linalg.solve(D, x-y)
-    
+        y = np.linalg.solve(D, x - y)
+
     else:
         numblocks = int(np.ceil(x.shape[1] / blocksize))
         y2 = np.zeros(x.shape)
         for k in range(1, numblocks + 1):
-            index = np.arange((k-1) * blocksize + 1, np.minimum(k * blocksize, x.shape[1])+1)
+            index = np.arange((k - 1) * blocksize + 1, np.minimum(k * blocksize, x.shape[1]) + 1)
             index -= 1
-            y2[:,index] = G @ np.linalg.solve(innerblock, y[:,index])
-            y2[:,index] = np.linalg.solve(D, (x[:,index]-y2[:,index]))
-        y=y2
+            y2[:, index] = G @ np.linalg.solve(innerblock, y[:, index])
+            y2[:, index] = np.linalg.solve(D, (x[:, index] - y2[:, index]))
+        y = y2
 
     return y
 
@@ -172,6 +168,5 @@ def premult_by_postcov(x, N, prior, noise):
 
 
 def calc_postmean(mhat, N, prior, noise):
-    
     mhat2 = lowrank_leftdiv(mhat, noise.D, noise.G)
     return premult_by_postcov(mhat2, N, prior, noise)
