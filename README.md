@@ -4,11 +4,11 @@ This package is a Python implementation of a Gaussian Process (GP) method for in
 
 The basic idea is to specify a prior over OPMs as a GP. This means that a-priori assumptions about correlations of the pixels in a map are specified as a covariance function K. In this case, we use a Difference of Gaussians (DoG) kernel. This covariance function encodes our assumptions that OPMs are smooth and have a semi-periodic structure. This prior is then updated via Bayes' rule with imaging data to obtain a smooth posterior estimate of an OPM. 
 
-My notes on the method (including derivations not in the original paper) can be found [here](https://gitlab.com/dominikstrb/orientation_preference_maps/blob/master/SupportingInfo.pdf).
+My notes on the method (including derivations not in the original paper) can be found [here](https://github.com/mackelab/gp-maps-python/blob/master/SupportingInfo.pdf).
 
 A number of notebooks illustrate how to use the package:
 
-## [OPM.ipynb](https://gitlab.com/dominikstrb/orientation_preference_maps/blob/master/OPM.ipynb)
+## [OPM.ipynb](https://github.com/mackelab/gp-maps-python/blob/master/demos/OPM.ipynb)
 
 contains basic functionality for handling OPMs:
 
@@ -19,7 +19,7 @@ contains basic functionality for handling OPMs:
 - smooth the OPM with a Gaussian kernel
 
 
-## [BayesianOPM.ipynb](https://gitlab.com/dominikstrb/orientation_preference_maps/blob/master/BayesianOPM.ipynb)
+## [BayesianOPM.ipynb](https://github.com/mackelab/gp-maps-python/blob/master/demos/BayesianOPM.ipynb)
 
 shows details about the GP method:
 
@@ -28,7 +28,7 @@ shows details about the GP method:
 - learn noise model iteratively from data
 - posterior inference
 
-## [FerretData.ipynb](https://gitlab.com/dominikstrb/orientation_preference_maps/blob/master/FerretData.ipynb)
+## [FerretData.ipynb](https://github.com/mackelab/gp-maps-python/blob/master/demos/FerretData.ipynb)
 
 serves as an illustration on how to use GPs to infer OPMs from real imaging data (replicating the results of Macke et al., 2011):
 
