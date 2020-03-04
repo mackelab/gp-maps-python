@@ -1,8 +1,8 @@
 from scipy.signal import correlate2d
 from scipy.optimize import curve_fit
 import numpy as np
-from .kernels import mexican_hat_kernel
-from ..opm import calculate_map
+from opm.gp.kernels import mexican_hat_kernel
+from opm.opm import ml_opm as calculate_map
 
 
 def rot_avg(xcorr, spacing=None):

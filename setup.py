@@ -26,6 +26,7 @@ setuptools.setup(
         "pingouin>=0.3.3",
         "scikit_image>=0.16.2",
         "dill>=0.3.1.1",
-        "PyQt5>=5.14.1"
+        "PyQt5>=5.14.1",
+        "scikit_learn>=0.22.2"
     ],
 )
