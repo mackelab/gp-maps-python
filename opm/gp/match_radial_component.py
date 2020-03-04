@@ -120,6 +120,7 @@ def match_radial_component(responses, stimuli, kernel=mexican_hat_kernel, p0=Non
         return kernel(r[:, np.newaxis], 0, **kernel_kwargs)
 
     # fit the kernel to the empirical map
-    popt, pcov = curve_fit(f, xdata=r, ydata=rot_cov, p0=list(p0.values()))
+    popt, pcov = curve_fit(f, xdata=r, ydata=rot_cov, p0=list(p0.values()),
+                           bounds=(np.array([0., 0.]), np.array([np.inf, np.inf])))
 
     return popt
