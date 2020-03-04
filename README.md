@@ -6,7 +6,20 @@ The basic idea is to specify a prior over OPMs as a GP. This means that a-priori
 
 My notes on the method (including derivations not in the original paper) can be found [here](https://github.com/mackelab/gp-maps-python/blob/master/SupportingInfo.pdf).
 
-A number of notebooks illustrate how to use the package:
+## Installation & Usage
+
+You can clone this package and install all its dependencies using
+
+```
+git clone git@github.com:mackelab/gp-maps-python.git
+python -m pip install -r requirements.txt
+```
+
+Alternatively, this module is now pip-installable via
+
+`python -m pip install gp-maps-python`
+
+A number of Jupyter notebooks illustrate how to use the package:
 
 ## [OPM.ipynb](https://github.com/mackelab/gp-maps-python/blob/master/demos/OPM.ipynb)
 
