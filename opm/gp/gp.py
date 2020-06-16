@@ -32,7 +32,7 @@ class GaussianProcessOPM:
         self.K_post = None
         self.mu_post = None
 
-    def fit_prior(self, rank=None, method='icd', verbose=False):
+    def fit_prior(self, method='icd', verbose=False):
         """ Learn a (low-rank) represenation of the prior covariance.
 
         Return:
@@ -40,7 +40,7 @@ class GaussianProcessOPM:
         """
 
         if not self.prior:
-            self.prior = LowRankPrior(self.idx, method=method, rank=rank)
+            self.prior = LowRankPrior(self.idx, method=method)
 
         if not self.kernel_params:
             raise RuntimeError("Prior parameters must be set (or fit) first")
@@ -130,7 +130,7 @@ class GaussianProcessOPM:
 
         return self.mu_post, self.K_post
 
-    def fit(self, stimuli, responses, rank=None, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False,
+    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False,
             **prior_kwargs):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
@@ -168,7 +168,7 @@ class GaussianProcessOPM:
         prior_kwargs.setdefault('p0', None)
 
         if not self.prior:
-            self.prior = LowRankPrior(self.idx, method=prior_kwargs['method'], rank=rank)
+            self.prior = LowRankPrior(self.idx, method=prior_kwargs['method'])
 
         if verbose:
             print('*** Fitting prior ***')
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
     gp = GaussianProcessOPM(indices=idx, kernel=kernels.fixed_k_mexhat)
 
-    mu_post, K_post = gp.fit(stimuli=V, responses=R, method='icd', rank=400, noise='factoran',
+    mu_post, K_post = gp.fit(stimuli=V, responses=R, method='icd', noise='factoran',
                              verbose=True, calc_postcov=True)
 
     result = mu_post[0] + 1j * mu_post[1]

@@ -25,98 +25,147 @@ def ridge_cholesky(A, maxtries=5):
     raise np.linalg.LinAlgError("Not positive definite, even with jitter.")
 
 
-class ICD:
-    """Incomplete Cholesky Decomposition: low rank approximation of a kernel matrix.
+def incomplete_cholesky(X, kernel, eta, power=1, blocksize=100, **kernel_kwargs):
     """
+    Computes the incomplete Cholesky factorisation of the kernel matrix defined
+    by samples X and a given kernel. The kernel is evaluated on-the-fly.
+    The optional power parameter is used to multiply the kernel output with
+    itself.
 
-    def __init__(self, rank, tol=1e-10):
-        """
-        Args:
-        
-            rank: Maximal rank of approximation G
-            tol: Approximation tolerance
-        """
-        self.rank = rank
-        self.tol = tol
-        self.G = None
-        self.trained = False
+    Original code from "Kernel Methods for Pattern Analysis" by Shawe-Taylor and
+    Cristianini.
+    Modified to compute kernel on the fly, to use kernels multiplied with
+    themselves (tensor product), and optimised speed via using vector
+    operations and not pre-allocate full kernel matrix memory, but rather
+    allocate memory of low-rank kernel block-wise
+    Changes by Heiko Strathmann
 
-    def fit(self, x, kernel, ridge=1e-4, **kernel_kwargs):
-        """Learn the low-rank approximation given a set of indices and a kernel function.
-        Args:
-            x: The indices at which to compute the covariance (npixels x 2 matrix, where the kth column contains the x and y coordinates of the kth pixel)
-            kernel: a kernel function that takes two vectors x and y
-            kernel_kwargs: parameters for the kernel function
-            
-        Returns:
-            G (n x self.rank)
-        """
+    parameters:
+    X         - List of input vectors to evaluate kernel on
+    kernel    - A kernel function that takes one or two 2d-arrays and computes
+                the kernel self- or cross-similarities.
+                Returns a psd kernel matrix
+    eta       - Precision cutoff parameter for the low-rank approximation.
+                If lies is (0,1), where smaller means more accurate, low rank
+                dimension is chosen from a residual value
+                If lies in [1,\infty), this low-rank dimension is chosen
+    power     - Every kernel evaluation is multiplied with itself this number
+                of times.
+    blocksize - Tuning parameter for speed, determines how rows elements are
+                allocated in a block for the (growing) kernel matrix. Larger
+                means faster algorithm (to some extend if low rank dimension
+                is larger than blocksize)
 
-        n = x.shape[0]
+    Output: dictionary with key-value pairs:
+    R    - is a low-rank factor such that R.T.dot(R) approximates the
+           original K
+    K_chol, ell, I, R, W, where
+    K    - is the kernel using only the pivot index features
+    I    - is a vector containing the pivots used to compute K_chol
+    W    - is a matrix such that W.T.dot(K_chol.dot(W)) approximates the
+           original K
+    nu   - vector of square rooted residuals for the pivoted points
 
-        # precompute diagonal elements
-        D = np.zeros(x.shape[0])
-        for k in range(n):
-            D[k] = kernel(x[k], x[k], **kernel_kwargs)
+    """
+    assert (eta > 0)
+    assert (power >= 1)
+    assert (blocksize >= 1)
+    assert (len(X) >= 1)
 
-        # add ridge to diagonal (for numerical stability)
-        D += np.mean(D) * ridge
+    m = len(X)
 
-        # initialize result matrix
-        G = np.zeros((n, self.rank))
+    # growing low rank basis
+    R = np.zeros((blocksize, m))
 
-        # list of remaining columns
-        J = set(range(n))
-        for i in range(self.rank):
+    # diagonal (assumed to be one)
+    d = np.ones(m) * kernel(0, 0, **kernel_kwargs)
 
-            # find best new element
-            jstar = np.argmax(D)
-            J.remove(float(jstar))
-            j = list(J)
+    # used indices
+    I = []
+    nu = []
 
-            # set current diagonal element
-            G[jstar, i] = np.sqrt(D[jstar])
+    # algorithm is executed as long as a is bigger than eta precision
+    a = d.max()
+    I.append(d.argmax())
 
-            # calculate the i'th column
-            newcol = np.zeros(len(j))
-            for l in range(len(j)):
-                newcol[l] = kernel(x[j[l]], x[jstar], **kernel_kwargs)
+    # growing set of evaluated kernel values
+    K = np.zeros((blocksize, m))
 
-            # update the i'th column
-            G[j, i] = 1.0 / G[jstar, i] * (newcol - G[j, :] @ G[jstar, :].T)
+    j = 0
 
-            # update the diagonal elements
-            D[j] = D[j] - (G[j, i] ** 2).ravel()
+    # Run based on what eta represents
+    # If in (0,1), until residuals are smaller than eta
+    # If in [1,\infty), until reconstruction has rank of eta
+    while eta < 1 and a > eta \
+            or eta >= 1 and j < eta:
+        nu.append(np.sqrt(a))
 
-            # eliminate selected pivot
-            D[jstar] = 0
+        if power >= 1:
+            K[j, :] = kernel(X[I[j], np.newaxis], X, **kernel_kwargs) ** power
+        else:
+            K[j, :] = 1.
 
-            # check tolerance and rank
-            if np.sum(D) < self.tol or i + 1 == self.rank:
-                break
+        if j == 0:
+            R_dot_j = 0
+        elif j == 1:
+            R_dot_j = R[:j, :] * R[:j, I[j]]
+        else:
+            R_dot_j = R[:j, :].T.dot(R[:j, I[j]])
 
-        self.G = G[:, :i + 1]
-        self.trained = True
+        R[j, :] = (K[j, :] - R_dot_j) / nu[j]
+        d = d - R[j, :] ** 2
+        a = d.max()
+        I.append(d.argmax())
+        j = j + 1
 
-        return self.G
+        # allocate more space for kernel
+        if j >= len(K):
+            K = np.vstack((K, np.zeros((blocksize, m))))
+            R = np.vstack((R, np.zeros((blocksize, m))))
 
-    def __call__(self, i, j):
-        """ Access portions of K = GG' at indices i, j.
-        Args:
-            i, j: indices to access K = GG'
-        Return:
-            K[i,j]
-        """
-        if not self.trained:
-            raise RuntimeError('Call train(...) first!')
-        return self.G[i, :] @ self.G[j, :].T
+    # remove un-used rows which were located unnecessarily
+    K = K[:j, :]
+    R = R[:j, :]
 
-    def __getitem__(self, idx):
-        """ Access portions of K = GG'
-        Args:
-            item: indices to access K = GG'
-        Return:
-            K[idx[0], idx[i]]
-        """
+    # remove list pivot index since it is not used
+    I = I[:-1]
 
-        return self(idx[0], idx[1])
+    # from low rank to full rank
+    W = np.linalg.solve(R[:, I], R)
+
+    # low rank K
+    K_chol = K[:, I]
+
+    return {"R": R, "K_chol": K_chol, "I": np.asarray(I), "W": W, "nu": np.asarray(nu)}
+
+
+def incomplete_cholesky_new_point(X, x, kernel, I=None, R=None, nu=None):
+    # compute factorisation if needed
+    if I is None or R is None:
+        temp = incomplete_cholesky(X, kernel, eta=0.8, power=2)
+        R, I, nu = (temp["R"], temp["I"], temp["nu"])
+
+    # compute kernel between pivot training and all test elements
+    k = kernel(x[np.newaxis, :], X[I])[0]
+
+    r_new = np.zeros(len(I))
+    for j in range(len(r_new)):
+        r_new[j] = (k[j] - r_new.dot(R[:, I[j]])) / nu[j]
+
+    return r_new
+
+
+def incomplete_cholesky_new_points(X, X_test, kernel, I=None, R=None, nu=None):
+    # compute factorisation if needed
+    if I is None or R is None or nu is None:
+        temp = incomplete_cholesky(X, kernel, eta=0.8, power=2)
+        R, I, nu = (temp["R"], temp["I"], temp["nu"])
+
+    # compute kernel between pivot training and all test elements
+    ks = kernel(X[I], X_test)
+
+    R_new = np.zeros((R.shape[0], len(X_test)))
+    for j in range(len(I)):
+        R_new[j, :] = (ks[j, :] - R_new.T.dot(R[:, I[j]])) / nu[j]
+
+    return R_new

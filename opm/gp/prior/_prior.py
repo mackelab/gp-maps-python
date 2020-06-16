@@ -1,6 +1,6 @@
 import numpy as np
 from opm.gp.prior.kernels import mexican_hat_kernel
-from opm.gp.prior.cholesky import ICD, ridge_cholesky
+from opm.gp.prior.cholesky import ridge_cholesky, incomplete_cholesky
 
 
 def prior_covariance(idx, kernel, **kwargs):
@@ -27,7 +27,7 @@ class LowRankPrior:
         or without a low-rank method.
     """
 
-    def __init__(self, x, method=None, rank=None):
+    def __init__(self, x, method=None):
         """ Setup LowRank prior
         Args:
             method: currently allows 'icd' or None, defaults to None
@@ -38,11 +38,6 @@ class LowRankPrior:
             raise ValueError('No valid low-rank method specified.')
         self.method = method
         self.x = x
-
-        if not rank:
-            self.rank = x.shape[0]
-        else:
-            self.rank = rank
 
         self._fit = False
 
@@ -70,10 +65,10 @@ class LowRankPrior:
             self.D = np.eye(self.x.shape[0]) * ridge
 
         elif self.method.lower() == 'icd':
-            icd = ICD(rank=self.rank)
-            icd.fit(self.x, kernel, ridge, **kernel_kwargs)
-            self.G = icd.G
-            self.K = icd
+            G = incomplete_cholesky(self.x, eta=1e-4, kernel=kernel, **kernel_kwargs)["R"]
+            self.G = G.T
+
+            self.rank = self.G.shape[1]
 
             n = self.x.shape[0]
 
@@ -81,11 +76,12 @@ class LowRankPrior:
             prior_var_uncorrected = np.zeros(n)
             prior_var_exact = np.zeros(n)
 
-            for k in range(n):
-                prior_var_uncorrected[k] = self.G[k, :] @ self.G[k, :].T
-                prior_var_exact[k] = kernel(self.x[k], self.x[k], **kernel_kwargs)
+            prior_var_uncorrected = self.G @ self.G.T
+            prior_var_exact = np.ones(n) * kernel(0, 0, **kernel_kwargs)
 
             self.D = np.diag(prior_var_exact - prior_var_uncorrected + 2 * ridge)
+
+            self.K = self.G @ self.G.T + self.D
 
         self._fit = True
 
