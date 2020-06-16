@@ -25,7 +25,7 @@ def ridge_cholesky(A, maxtries=5):
     raise np.linalg.LinAlgError("Not positive definite, even with jitter.")
 
 
-def incomplete_cholesky(X, kernel, eta, power=1, blocksize=100, **kernel_kwargs):
+def incomplete_cholesky(X, kernel, eta, ridge=1e-6, power=1, blocksize=100, **kernel_kwargs):
     """
     Computes the incomplete Cholesky factorisation of the kernel matrix defined
     by samples X and a given kernel. The kernel is evaluated on-the-fly.
@@ -79,6 +79,7 @@ def incomplete_cholesky(X, kernel, eta, power=1, blocksize=100, **kernel_kwargs)
 
     # diagonal (assumed to be one)
     d = np.ones(m) * kernel(0, 0, **kernel_kwargs)
+    d = d + ridge
 
     # used indices
     I = []

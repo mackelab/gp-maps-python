@@ -1,12 +1,10 @@
-from opm.gp.prior.match_radial_component import match_radial_component
-from opm.gp.prior import LowRankPrior, kernels
+from opm.gp.prior import kernels
 from opm.gp.noise import FixedNoise, LowRankNoise
 from opm.gp.lowrank import calc_postmean
 
 from opm import ml_opm
 
 import numpy as np
-import inspect
 import dill as pickle
 import os
 
@@ -15,72 +13,19 @@ class GaussianProcessOPM:
     """ A Gaussian process used to infer an orientation preference map (OPM) from imaging data.
     """
 
-    def __init__(self, indices, kernel=kernels.fixed_k_mexhat):
+    def __init__(self, prior):
         """ Initialize prior fitting method and dimensionalities
         
         Args:
-            indices: n x 2 array of indices
+            prior: LowRankPrior instance
         """
-        self.idx = indices
 
-        self.kernel = kernel
-        self.kernel_params = {}
 
-        self.prior = None
+        self.prior = prior
         self.noise = None
 
         self.K_post = None
         self.mu_post = None
-
-    def fit_prior(self, method='icd', verbose=False):
-        """ Learn a (low-rank) represenation of the prior covariance.
-
-        Return:
-            self.prior (fitted LowRankPrior object)
-        """
-
-        if not self.prior:
-            self.prior = LowRankPrior(self.idx, method=method)
-
-        if not self.kernel_params:
-            raise RuntimeError("Prior parameters must be set (or fit) first")
-
-        if verbose:
-            print('Calculating the prior from scratch..')
-
-        self.prior.fit(kernel=self.kernel, **self.kernel_params)
-        return self.prior
-
-    def optimize(self, stimuli, responses, p0=None, verbose=False):
-        """ Estimate the prior hyperparameters by matching them to the radial component 
-            of the empirical map (see match_radial_components).
-            
-        Args:
-            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
-            responses: N_cond x N_rep x n array, responses from an experiment
-            p0: (dict) initial guess for the kernel hyperparameters
-        
-        Returns:
-            self.kernel_params, dict containing the names and optimized values of the hyperparameters
-        """
-
-        if verbose:
-            print('Estimating prior hyperparameters:')
-
-        # get names and default values for hyperparameters
-        s = inspect.signature(self.kernel)
-        hyperparams = list(s.parameters.values())[2:]
-        if not p0:
-            p0 = {p.name: p.default for p in hyperparams}
-
-        p_opt = match_radial_component(responses=responses, stimuli=stimuli, p0=p0)
-
-        self.kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
-
-        if verbose:
-            print(self.kernel_params)
-
-        return self.kernel_params
 
     def fit_posterior(self, stimuli, responses, calc_postcov=False):
         """ Given a set of stimuli and responses, compute the posterior mean and covariance
@@ -161,26 +106,13 @@ class GaussianProcessOPM:
         N = N_cond * N_rep
         n = responses.shape[2] * responses.shape[3]
 
+        # responses = responses.reshape(N, n)
+
         if prior_kwargs is None:
             prior_kwargs = {}
 
         prior_kwargs.setdefault('method', 'icd')
         prior_kwargs.setdefault('p0', None)
-
-        if not self.prior:
-            self.prior = LowRankPrior(self.idx, method=prior_kwargs['method'])
-
-        if verbose:
-            print('*** Fitting prior ***')
-
-        if not self.kernel_params:
-            self.optimize(stimuli, responses, p0=prior_kwargs['p0'], verbose=verbose)
-
-        if not self.prior.is_fit:
-            self.fit_prior(verbose=verbose)
-
-        elif verbose:
-            print('Using previously fit prior..')
 
         if verbose:
             print('*** Fitting posterior ***')

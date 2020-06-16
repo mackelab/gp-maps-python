@@ -1,6 +1,9 @@
 import numpy as np
+import inspect
+
 from opm.gp.prior.kernels import mexican_hat_kernel
 from opm.gp.prior.cholesky import ridge_cholesky, incomplete_cholesky
+from opm.gp.prior.match_radial_component import match_radial_component
 
 
 def prior_covariance(idx, kernel, **kwargs):
@@ -27,25 +30,64 @@ class LowRankPrior:
         or without a low-rank method.
     """
 
-    def __init__(self, x, method=None):
+    def __init__(self, idx, kernel, method="icd"):
         """ Setup LowRank prior
         Args:
             method: currently allows 'icd' or None, defaults to None
             rank: rank of the approximation (not used when None is specified)
         """
 
-        if method not in [None, 'icd']:
+        if method not in ["full", "icd"]:
             raise ValueError('No valid low-rank method specified.')
+
+
         self.method = method
-        self.x = x
+        self.x = idx
+        self.kernel = kernel
 
         self._fit = False
+
+    def optimize(self, stimuli, responses, p0=None, verbose=False):
+        """ Estimate the prior hyperparameters by matching them to the radial component
+            of the empirical map (see match_radial_components).
+
+        Args:
+            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
+            responses: N_cond x N_rep x n array, responses from an experiment
+            p0: (dict) initial guess for the kernel hyperparameters
+
+        Returns:
+            self.kernel_params, dict containing the names and optimized values of the hyperparameters
+        """
+
+        if verbose:
+            print('Estimating prior hyperparameters:')
+
+        # get names and default values for hyperparameters
+        s = inspect.signature(self.kernel)
+        hyperparams = list(s.parameters.values())[2:]
+        if not p0:
+            p0 = {p.name: p.default for p in hyperparams}
+
+        p_opt = match_radial_component(responses=responses, stimuli=stimuli, p0=p0)
+
+        self.kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
+
+        if verbose:
+            print(self.kernel_params)
+
+        if verbose:
+            print("Recomputing prior")
+
+        self.fit(**self.kernel_params)
+
+        return self.kernel_params
 
     @property
     def is_fit(self):
         return self._fit
 
-    def fit(self, kernel=mexican_hat_kernel, ridge=1e-4, **kernel_kwargs):
+    def fit(self, ridge=1e-6, **kernel_kwargs):
         """ Learn a (low-rank) prior.
         Args:
             kernel: a kernel function that takes two vectors x and y
@@ -59,13 +101,13 @@ class LowRankPrior:
         """
 
         if not self.method:
-            self.K = prior_covariance(self.x, kernel=kernel, **kernel_kwargs)
+            self.K = prior_covariance(self.x, kernel=self.kernel, **kernel_kwargs)
             self.G = ridge_cholesky(self.K)
 
             self.D = np.eye(self.x.shape[0]) * ridge
 
         elif self.method.lower() == 'icd':
-            G = incomplete_cholesky(self.x, eta=1e-4, kernel=kernel, **kernel_kwargs)["R"]
+            G = incomplete_cholesky(self.x, eta=1e-4, kernel=self.kernel, ridge=ridge, **kernel_kwargs)["R"]
             self.G = G.T
 
             self.rank = self.G.shape[1]
@@ -77,7 +119,7 @@ class LowRankPrior:
             prior_var_exact = np.zeros(n)
 
             prior_var_uncorrected = self.G @ self.G.T
-            prior_var_exact = np.ones(n) * kernel(0, 0, **kernel_kwargs)
+            prior_var_exact = np.ones(n) * self.kernel(0, 0, **kernel_kwargs)
 
             self.D = np.diag(prior_var_exact - prior_var_uncorrected + 2 * ridge)
 
