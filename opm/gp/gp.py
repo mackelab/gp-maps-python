@@ -57,7 +57,8 @@ class GaussianProcessOPM:
         # responses = responses.reshape(N, n)
 
         if not self.prior.is_fit:
-            self.prior.init_from_empirical(stimuli, responses, verbose=verbose)
+            mhat = ml_opm(responses, stimuli)
+            self.prior.init_from_empirical(mhat, verbose=verbose)
 
         if verbose:
             print('*** Fitting posterior ***')

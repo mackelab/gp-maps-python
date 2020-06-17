@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 
-from opm.gp.kernels import mexican_hat_kernel
+from opm.gp.prior.kernels import mexican_hat_kernel
 from opm.gp.prior import prior_covariance
 from opm.gp.helpers import get_2d_indices
 

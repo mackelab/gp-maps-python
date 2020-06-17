@@ -80,22 +80,18 @@ def radial_component(a, spacing=None):
     return mean, r
 
 
-def match_radial_component(responses, stimuli, kernel=mexican_hat_kernel, p0=None):
+def match_radial_component(m, kernel=mexican_hat_kernel, p0=None):
     """ Estimate the hyperparameters of the covariance function from the empirical map
     
     Args:
-        stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
-        responses: N_cond x N_rep x n_x x n_y array, responses from an experiment 
-        size: (n_x, n_y) shape of result, defaults to (sqrt(n), sqrt(n))
+
+        m: (d x n_x x n_y) empirical map
         kernel: the covariance function
         p0: dictionary, where the names are the argument names for the kernel and the values are the initial guesses
         
     Returns:
         optimal hyperparameter values
     """
-
-    # calculate the orientation preference map
-    m = ml_opm(responses, stimuli)
 
     # if none are given, use default arguments for mexican hat kernel with reasonable initial values
     if p0 is None:

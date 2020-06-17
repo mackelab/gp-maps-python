@@ -47,13 +47,12 @@ class LowRankPrior:
 
         self._fit = False
 
-    def init_from_empirical(self, stimuli, responses, p0=None, verbose=False):
+    def init_from_empirical(self, m, p0=None, verbose=False):
         """ Estimate the prior hyperparameters by matching them to the radial component
             of the empirical map (see match_radial_components).
 
         Args:
-            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
-            responses: N_cond x N_rep x n array, responses from an experiment
+            m: d x nx x ny, empirical map
             p0: (dict) initial guess for the kernel hyperparameters
 
         Returns:
@@ -69,7 +68,7 @@ class LowRankPrior:
         if not p0:
             p0 = {p.name: p.default for p in hyperparams}
 
-        p_opt = match_radial_component(responses=responses, stimuli=stimuli, p0=p0)
+        p_opt = match_radial_component(m=m, p0=p0)
 
         kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
 

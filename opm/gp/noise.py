@@ -18,6 +18,10 @@ class NoiseModel:
         return self._covariance
 
     @property
+    def inverse_covariance(self):
+        return np.linalg.inv(self.covariance)
+
+    @property
     def variance(self):
         """ Variance (diagonal of covariance matrix)
         """
