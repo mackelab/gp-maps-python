@@ -81,14 +81,18 @@ class GaussianProcessOPM:
             if verbose:
                 print('Fitting noise model: iteration {} / {}'.format(i + 1, n_iter))
 
-            if i >= 1:
-                noise_var_init = self.noise.variance
-            else:
+            if i == 0:
                 noise_var_init = None
+                # for i==0, the posterior mean is None, thus we assume all the signal is noise
+                z = (responses - responses.mean(axis=1, keepdims=True)).reshape(N, n)
+            else:
+                noise_var_init = self.noise.variance
 
-            # learn the noise model (either indep or factoran) given the posterior mean
-            # for i==0, the posterior mean is None, thus we assume all the signal is noise
-            self.noise.fit(V=stimuli, R=responses, mu=self.mu_post, noise_variance_init=noise_var_init,
+                # compute residuals
+                z = r - V @ self.mu_post
+
+            # learn the noise model
+            self.noise.fit(z=z, noise_variance_init=noise_var_init,
                            max_iter=noise_kwargs['max_iter'], tol=noise_kwargs['tol'],
                            iterated_power=noise_kwargs['iterated_power'])
 
@@ -119,7 +123,6 @@ class GaussianProcessOPM:
 
             # use the low-rank approximations of prior and noise to compute the posterior mean (see lowrank.py)
             self.mu_post = calc_postmean(r.T @ V, beta=beta, prior=self.prior, noise=self.noise).T
-            self.mu_post = self.mu_post.reshape((d, nx, ny))
 
         return self.mu_post, self.K_post
 
@@ -133,10 +136,10 @@ class GaussianProcessOPM:
         Returns:
             ll (np.array): N x 1 log likelihood for each stimulus
         """
-        error = response - (self.mu_post.T @ stimuli.T)
-        ll = - 0.5 * error.T @ self.noise.inverse_covariance @ error
+        z = response - stimuli @ self.mu_post
+        ll = self.noise.log_likelihood(z)
 
-        return np.diag(ll)
+        return ll
 
     def save(self, fname):
         """ Save this object to a file
