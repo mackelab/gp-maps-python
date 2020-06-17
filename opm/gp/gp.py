@@ -1,5 +1,5 @@
 from opm.gp.prior import kernels, LowRankPrior
-from opm.gp.noise import FixedNoise, LowRankNoise
+from opm.gp.noise import LowRankNoise
 from opm.gp.lowrank import calc_postmean
 
 from opm import ml_opm
@@ -13,7 +13,7 @@ class GaussianProcessOPM:
     """ A Gaussian process used to infer an orientation preference map (OPM) from imaging data.
     """
 
-    def __init__(self, prior: LowRankPrior):
+    def __init__(self, prior: LowRankPrior, noise: LowRankNoise):
         """ Initialize prior fitting method and dimensionalities
         
         Args:
@@ -21,12 +21,12 @@ class GaussianProcessOPM:
         """
 
         self.prior = prior
-        self.noise = None
+        self.noise = noise
 
         self.K_post = None
         self.mu_post = None
 
-    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False):
+    def fit(self, stimuli, responses, noise_kwargs=None, verbose=False, calc_postcov=False):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
             - Fit prior covariance
@@ -42,10 +42,6 @@ class GaussianProcessOPM:
         Returns:
             self.mu_post: posterior mean
         """
-
-        # check if valid noise estimation method is specified
-        if not (type(noise) is np.ndarray or (type(noise) is str and noise in ['factoran', 'indep'])):
-            raise ValueError("Please specify a valid noise model.")
 
         # get dimensionalities
         d = stimuli.shape[2]
@@ -71,8 +67,6 @@ class GaussianProcessOPM:
 
         # default noise model parameters
         noise_kwargs.setdefault('iterations', 3)
-        noise_kwargs.setdefault('q', 2)
-        noise_kwargs.setdefault('method', noise)
         noise_kwargs.setdefault('max_iter', 1000)
         noise_kwargs.setdefault('tol', 0.01)
         noise_kwargs.setdefault('iterated_power', 3)
@@ -87,8 +81,6 @@ class GaussianProcessOPM:
                 noise_var_init = self.noise.variance
             else:
                 noise_var_init = None
-
-            self.noise = LowRankNoise(method=noise_kwargs['method'], q=noise_kwargs['q'])
 
             # learn the noise model (either indep or factoran) given the posterior mean
             # for i==0, the posterior mean is None, thus we assume all the signal is noise
@@ -202,9 +194,9 @@ if __name__ == "__main__":
     plt.show()
 
     # compute responses
-    contrasts = [0.5]
+    contrasts = [1, 0.5]
     orientations = [i * np.pi / 8 for i in range(8)]
-    repetitions = 16
+    repetitions = 8
 
     stim = create_stimuli(contrasts, orientations, repetitions)
 
@@ -220,10 +212,11 @@ if __name__ == "__main__":
 
     prior = LowRankPrior(idx=idx, method="icd", kernel=kernels.fixed_k_mexhat)
 
-    gp = GaussianProcessOPM(prior=prior)
+    noise = LowRankNoise(method="factoran", q=2)
 
-    mu_post, K_post = gp.fit(stimuli=stim, responses=R, noise='factoran',
-                             verbose=True, calc_postcov=False)
+    gp = GaussianProcessOPM(prior=prior, noise=noise)
+
+    mu_post, K_post = gp.fit(stimuli=stim, responses=R, verbose=True, calc_postcov=False)
 
     result = mu_post[0] + 1j * mu_post[1]
     result = result.reshape(size)
