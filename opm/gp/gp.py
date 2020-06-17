@@ -43,22 +43,24 @@ class GaussianProcessOPM:
             self.mu_post: posterior mean
         """
 
-        # get dimensionalities
-        d = stimuli.shape[2]
-
+        # get dimensionalities of stimulus matrix
         N_cond = responses.shape[0]
         N_rep = responses.shape[1]
+        d = stimuli.shape[2]
         N = N_cond * N_rep
+
+        V = stimuli.reshape(N, d)
+        beta = 1 / np.diag(V.T @ V).mean()
 
         nx = responses.shape[2]
         ny = responses.shape[3]
         n = nx * ny
 
-        # responses = responses.reshape(N, n)
+        r = responses.reshape(N, n)
 
         if not self.prior.is_fit:
-            mhat = ml_opm(responses, stimuli)
-            self.prior.init_from_empirical(mhat, verbose=verbose)
+            m_emp = np.linalg.inv(V.T @ V) @ V.T @ r
+            self.prior.init_from_empirical(m_emp.reshape(d, nx, ny), verbose=verbose)
 
         if verbose:
             print('*** Fitting posterior ***')
@@ -72,11 +74,12 @@ class GaussianProcessOPM:
         noise_kwargs.setdefault('tol', 0.01)
         noise_kwargs.setdefault('iterated_power', 3)
 
+        n_iter = noise_kwargs['iterations']
         # iterative noise fitting procedure
-        for i in range(noise_kwargs['iterations']):
+        for i in range(n_iter):
 
             if verbose:
-                print('Fitting noise model: iteration {}'.format(i + 1))
+                print('Fitting noise model: iteration {} / {}'.format(i + 1, n_iter))
 
             if i >= 1:
                 noise_var_init = self.noise.variance
@@ -93,7 +96,6 @@ class GaussianProcessOPM:
             if i == noise_kwargs['iterations'] - 1 and calc_postcov:
                 G = self.prior.G
                 K = G @ G.T + self.prior.D
-                beta = 2 / N
 
                 S = np.linalg.inv(self.noise.covariance)
                 K_post_c = K - 1 / beta * K @ (
@@ -101,8 +103,6 @@ class GaussianProcessOPM:
 
                 self.K_post = np.kron(np.eye(d), K_post_c)
                 # calculate the full posterior covariance (only in the last iteration)
-
-            mhat = responses.reshape(N, n).T @ stimuli.reshape(N, d)
 
             # self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
 
@@ -114,8 +114,11 @@ class GaussianProcessOPM:
             # for v, r in zip(V, R):
             #    vr += np.kron(v, r)[:,np.newaxis]
 
+            if verbose:
+                print('Computing posterior mean: iteration {} / {}'.format(i + 1, n_iter))
+
             # use the low-rank approximations of prior and noise to compute the posterior mean (see lowrank.py)
-            self.mu_post = calc_postmean(mhat, N, prior=self.prior, noise=self.noise).T
+            self.mu_post = calc_postmean(r.T @ V, beta=beta, prior=self.prior, noise=self.noise).T
             self.mu_post = self.mu_post.reshape((d, nx, ny))
 
         return self.mu_post, self.K_post
@@ -168,7 +171,7 @@ class GaussianProcessOPM:
         try:
             gp = pickle.load(open(fname, "rb"))
         except IOError as io:
-            print("IOError while saving class: {}".format(io))
+            print("IOError while loading file: {}".format(io))
 
         return gp
 
@@ -191,7 +194,7 @@ if __name__ == "__main__":
     # ground truth opm
     m = make_opm(size, alpha=2, k=2, sigma=4, d=d)
 
-    f, ax, _ = plot_opm(m[0] + 1j * m[1])
+    f, ax, _ = plot_opm(m[0] + 1j * m[1], shade=True)
     plt.show()
 
     # compute responses
@@ -204,7 +207,6 @@ if __name__ == "__main__":
     R = compute_responses(m, stim, noise=0.5)
 
     V = stim.reshape(stim.shape[0] * stim.shape[1], d)
-    print(V.T @ V)
 
     mhat = ml_opm(R, stim)
     mhat = mhat[0] + 1j * mhat[1]
@@ -219,10 +221,8 @@ if __name__ == "__main__":
 
     mu_post, K_post = gp.fit(stimuli=stim, responses=R, verbose=True, calc_postcov=False)
 
-    result = mu_post[0] + 1j * mu_post[1]
-    result = result.reshape(size)
-
-    f, ax, _ = plot_opm(result, title='GP posterior mean')
+    f, ax, _ = plot_opm((mu_post[0] + 1j * mu_post[1]).reshape(size), title='GP posterior mean',
+                        shade=True)
     plt.show()
 
     noise_var = np.diag(gp.noise.covariance)

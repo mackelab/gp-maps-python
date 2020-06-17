@@ -138,13 +138,13 @@ def lowrank_leftmult(x, D, G, R=None, H=None):
     return y
 
 
-def premult_by_postcov(x, N, prior, noise):
+def premult_by_postcov(x, beta, prior, noise):
     """ Left-multiply x by the posterior covariance matrix given by the prior and noise model
         without explicitly computing or storing the posterior covariance.
 
     Args:
         x: empirical estimate of the map
-        N: number of trials
+        beta: stimulus covariance factor
         prior: LowRankPrior object
         D_noise: diagonal noise matrix
         G_noise: low-rank elements of noise
@@ -153,8 +153,6 @@ def premult_by_postcov(x, N, prior, noise):
 
     """
     y = lowrank_leftmult(x, prior.D, prior.G, R=None, H=None)
-
-    beta = 2 / N
 
     n, q = noise.G.shape
 
@@ -167,6 +165,6 @@ def premult_by_postcov(x, N, prior, noise):
     return y
 
 
-def calc_postmean(mhat, N, prior, noise):
+def calc_postmean(mhat, beta, prior, noise):
     mhat2 = lowrank_leftdiv(mhat, noise.D, noise.G)
-    return premult_by_postcov(mhat2, N, prior, noise)
+    return premult_by_postcov(mhat2, beta, prior, noise)

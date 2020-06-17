@@ -1,7 +1,7 @@
 import numpy as np
 import inspect
 
-from opm.gp.prior.kernels import mexican_hat_kernel
+from opm.gp.prior.kernels import fixed_k_mexhat
 from opm.gp.prior.cholesky import ridge_cholesky, incomplete_cholesky
 from opm.gp.prior.match_radial_component import match_radial_component
 
@@ -30,7 +30,7 @@ class LowRankPrior:
         or without a low-rank method.
     """
 
-    def __init__(self, idx, kernel, method="icd", ridge=1e-6):
+    def __init__(self, idx, kernel=fixed_k_mexhat, method="icd", ridge=1e-6):
         """ Setup LowRank prior
         Args:
             method: currently allows 'icd' or None, defaults to None
