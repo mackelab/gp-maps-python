@@ -1,4 +1,4 @@
-from opm.gp.prior import kernels
+from opm.gp.prior import kernels, LowRankPrior
 from opm.gp.noise import FixedNoise, LowRankNoise
 from opm.gp.lowrank import calc_postmean
 
@@ -13,13 +13,12 @@ class GaussianProcessOPM:
     """ A Gaussian process used to infer an orientation preference map (OPM) from imaging data.
     """
 
-    def __init__(self, prior):
+    def __init__(self, prior: LowRankPrior):
         """ Initialize prior fitting method and dimensionalities
         
         Args:
             prior: LowRankPrior instance
         """
-
 
         self.prior = prior
         self.noise = None
@@ -27,56 +26,7 @@ class GaussianProcessOPM:
         self.K_post = None
         self.mu_post = None
 
-    def fit_posterior(self, stimuli, responses, calc_postcov=False):
-        """ Given a set of stimuli and responses, compute the posterior mean and covariance
-        
-        Args:
-            stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
-            responses: N_cond x N_rep x n array, responses from an experiment
-        
-        Returns:
-            self.mu_post, self.K_post: posterior mean and covariance (K_post is None if not calc_postcov)
-        """
-
-        N = stimuli.shape[0] * stimuli.shape[1]
-        d = stimuli.shape[2]
-
-        nx = responses.shape[2]
-        ny = responses.shape[3]
-        n = nx * ny
-
-        # calculate empirical map
-        mhat = ml_opm(responses, stimuli).reshape((d, n)).T
-
-        if calc_postcov:
-            G = self.prior.G
-            K = G @ G.T + self.prior.D
-            beta = 2 / N
-
-            S = np.linalg.inv(self.noise.covariance)
-            K_post_c = K - 1 / beta * K @ (
-                    S - S @ G @ np.linalg.inv(beta * np.eye(self.prior.rank) + G.T @ S @ G) @ G.T @ S) @ K
-
-            self.K_post = np.kron(np.eye(d), K_post_c)
-
-        # self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
-
-        # inefficient version (keeping the comment for readability)
-        # K_post = np.linalg.inv(np.linalg.inv(K_m) + np.kron(N/2 * np.eye(d), K_e))
-
-        # different way of writing vector averaging (calculate_map, i.e. max likelihood)
-        # vr = np.zeros((n*d,1))
-        # for v, r in zip(V, R):
-        #    vr += np.kron(v, r)[:,np.newaxis]
-
-        # use the low-rank approximations of prior and noise to compute the posterior mean (see lowrank.py)
-        self.mu_post = calc_postmean(mhat, N, prior=self.prior, noise=self.noise).T
-        self.mu_post = self.mu_post.reshape((d, nx, ny))
-
-        return self.mu_post, self.K_post
-
-    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False,
-            **prior_kwargs):
+    def fit(self, stimuli, responses, noise='factoran', noise_kwargs=None, verbose=False, calc_postcov=False):
         """ Complete fitting procedure:
             - Estimate prior hyperparameters using empirical map
             - Fit prior covariance
@@ -85,9 +35,7 @@ class GaussianProcessOPM:
         Args:
             stimuli: N_cond x N_rep x d array, stimulus conditions for each trial
             responses: N_cond x N_rep x n array, responses from an experiment
-            noise_cov: can be
-                        - n x n numpy.ndarray, given noise covariance matrix 
-                        - 'factoran': iterative factor analysis noise estimation
+            noise_cov:  - 'factoran': iterative factor analysis noise estimation
                         - 'indep': iterative independent noise estimation
             verbose: boolean, do you want to print progress info?
         
@@ -101,64 +49,81 @@ class GaussianProcessOPM:
 
         # get dimensionalities
         d = stimuli.shape[2]
+
         N_cond = responses.shape[0]
         N_rep = responses.shape[1]
         N = N_cond * N_rep
-        n = responses.shape[2] * responses.shape[3]
+
+        nx = responses.shape[2]
+        ny = responses.shape[3]
+        n = nx * ny
 
         # responses = responses.reshape(N, n)
 
-        if prior_kwargs is None:
-            prior_kwargs = {}
-
-        prior_kwargs.setdefault('method', 'icd')
-        prior_kwargs.setdefault('p0', None)
+        if not self.prior.is_fit:
+            self.prior.init_from_empirical(stimuli, responses, verbose=verbose)
 
         if verbose:
             print('*** Fitting posterior ***')
 
-        if type(noise) is np.ndarray:
-            self.noise = FixedNoise(noise)
-            # given noise covariance matrix
-            self.fit_posterior(stimuli, responses, calc_postcov)
+        if noise_kwargs is None:
+            noise_kwargs = dict()
 
-        else:
-            if noise_kwargs is None:
-                noise_kwargs = {}
+        # default noise model parameters
+        noise_kwargs.setdefault('iterations', 3)
+        noise_kwargs.setdefault('q', 2)
+        noise_kwargs.setdefault('method', noise)
+        noise_kwargs.setdefault('max_iter', 1000)
+        noise_kwargs.setdefault('tol', 0.01)
+        noise_kwargs.setdefault('iterated_power', 3)
 
-            # default noise model parameters
-            noise_kwargs.setdefault('iterations', 3)
-            noise_kwargs.setdefault('q', 2)
-            noise_kwargs.setdefault('method', noise)
-            noise_kwargs.setdefault('max_iter', 1000)
-            noise_kwargs.setdefault('tol', 0.01)
-            noise_kwargs.setdefault('iterated_power', 3)
+        # iterative noise fitting procedure
+        for i in range(noise_kwargs['iterations']):
 
-            # iterative noise fitting procedure
-            for i in range(noise_kwargs['iterations']):
+            if verbose:
+                print('Fitting noise model: iteration {}'.format(i + 1))
 
-                if verbose:
-                    print('Fitting noise model: iteration {}'.format(i + 1))
+            if i >= 1:
+                noise_var_init = self.noise.variance
+            else:
+                noise_var_init = None
 
-                if i >= 1:
-                    noise_var_init = self.noise.variance
-                else:
-                    noise_var_init = None
+            self.noise = LowRankNoise(method=noise_kwargs['method'], q=noise_kwargs['q'])
 
-                self.noise = LowRankNoise(method=noise_kwargs['method'], q=noise_kwargs['q'])
+            # learn the noise model (either indep or factoran) given the posterior mean
+            # for i==0, the posterior mean is None, thus we assume all the signal is noise
+            self.noise.fit(V=stimuli, R=responses, mu=self.mu_post, noise_variance_init=noise_var_init,
+                           max_iter=noise_kwargs['max_iter'], tol=noise_kwargs['tol'],
+                           iterated_power=noise_kwargs['iterated_power'])
 
-                # learn the noise model (either indep or factoran) given the posterior mean
-                # for i==0, the posterior mean is None, thus we assume all the signal is noise
-                self.noise.fit(V=stimuli, R=responses, mu=self.mu_post, noise_variance_init=noise_var_init,
-                               max_iter=noise_kwargs['max_iter'], tol=noise_kwargs['tol'],
-                               iterated_power=noise_kwargs['iterated_power'])
+            # get updated estimate of posterior mean using current estimate of noise covariance
+            if i == noise_kwargs['iterations'] - 1 and calc_postcov:
+                G = self.prior.G
+                K = G @ G.T + self.prior.D
+                beta = 2 / N
 
-                # get updated estimate of posterior mean using current estimate of noise covariance
-                if i == noise_kwargs['iterations'] - 1 and calc_postcov:
-                    # calculate the full posterior covariance (only in the last iteration)
-                    mu, _ = self.fit_posterior(stimuli, responses, calc_postcov)
-                else:
-                    mu, _ = self.fit_posterior(stimuli, responses)
+                S = np.linalg.inv(self.noise.covariance)
+                K_post_c = K - 1 / beta * K @ (
+                        S - S @ G @ np.linalg.inv(beta * np.eye(self.prior.rank) + G.T @ S @ G) @ G.T @ S) @ K
+
+                self.K_post = np.kron(np.eye(d), K_post_c)
+                # calculate the full posterior covariance (only in the last iteration)
+
+            mhat = responses.reshape(N, n).T @ stimuli.reshape(N, d)
+
+            # self.mu_post = np.kron(np.eye(d), K_post_c @ S) @ mhat
+
+            # inefficient version (keeping the comment for readability)
+            # K_post = np.linalg.inv(np.linalg.inv(K_m) + np.kron(N/2 * np.eye(d), K_e))
+
+            # different way of writing vector averaging (calculate_map, i.e. max likelihood)
+            # vr = np.zeros((n*d,1))
+            # for v, r in zip(V, R):
+            #    vr += np.kron(v, r)[:,np.newaxis]
+
+            # use the low-rank approximations of prior and noise to compute the posterior mean (see lowrank.py)
+            self.mu_post = calc_postmean(mhat, N, prior=self.prior, noise=self.noise).T
+            self.mu_post = self.mu_post.reshape((d, nx, ny))
 
         return self.mu_post, self.K_post
 
@@ -222,36 +187,46 @@ if __name__ == "__main__":
     from opm.response import compute_responses
     from opm.stimuli import create_stimuli
     from opm.gp.helpers import get_2d_indices
+    from opm.gp.kernels import fixed_k_mexhat
 
     size = (50, 50)
 
     n = size[0] * size[1]
     d = 3
 
+    idx = get_2d_indices(size)
+
     # ground truth opm
-    m = make_opm(size=size, sigma=3., k=2., alpha=2.)
+    m = make_opm(size, alpha=2, k=2, sigma=4)
 
     f, ax, _ = plot_opm(m)
     plt.show()
 
-    idx = get_2d_indices(size)
-
     # compute responses
     contrasts = [1.]
-    orientations = [i * np.pi / 4 - np.pi / 2 for i in range(4)]
+    orientations = [i * np.pi / 8 for i in range(8)]
     repetitions = 16
 
-    V = create_stimuli(contrasts, orientations, repetitions)
+    stim = create_stimuli(contrasts, orientations, repetitions)
 
-    # number of trials
-    N_cond = V.shape[0]
-    N = N_cond * V.shape[1]
+    N = stim.shape[0] * stim.shape[1]
+    d = stim.shape[2]
 
-    R = compute_responses(m, contrasts, orientations, repetitions, sigma=0.1)
+    V = stim.reshape(N, d)
 
-    gp = GaussianProcessOPM(indices=idx, kernel=kernels.fixed_k_mexhat)
+    R = compute_responses(m, contrasts, orientations, repetitions, sigma=1.)
+    print(R.shape)
 
-    mu_post, K_post = gp.fit(stimuli=V, responses=R, method='icd', noise='factoran',
+    mhat = ml_opm(R, stim)
+    mhat = mhat[0] + 1j * mhat[1]
+    plot_opm(mhat, title="Empirical map")
+    plt.show()
+
+    prior = LowRankPrior(idx=idx, method="icd", kernel=kernels.fixed_k_mexhat)
+
+    gp = GaussianProcessOPM(prior=prior)
+
+    mu_post, K_post = gp.fit(stimuli=stim, responses=R, noise='factoran',
                              verbose=True, calc_postcov=True)
 
     result = mu_post[0] + 1j * mu_post[1]

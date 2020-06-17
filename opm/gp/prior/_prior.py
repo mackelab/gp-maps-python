@@ -30,7 +30,7 @@ class LowRankPrior:
         or without a low-rank method.
     """
 
-    def __init__(self, idx, kernel, method="icd"):
+    def __init__(self, idx, kernel, method="icd", ridge=1e-6):
         """ Setup LowRank prior
         Args:
             method: currently allows 'icd' or None, defaults to None
@@ -40,14 +40,14 @@ class LowRankPrior:
         if method not in ["full", "icd"]:
             raise ValueError('No valid low-rank method specified.')
 
-
         self.method = method
         self.x = idx
         self.kernel = kernel
+        self.ridge = ridge
 
         self._fit = False
 
-    def optimize(self, stimuli, responses, p0=None, verbose=False):
+    def init_from_empirical(self, stimuli, responses, p0=None, verbose=False):
         """ Estimate the prior hyperparameters by matching them to the radial component
             of the empirical map (see match_radial_components).
 
@@ -71,15 +71,15 @@ class LowRankPrior:
 
         p_opt = match_radial_component(responses=responses, stimuli=stimuli, p0=p0)
 
-        self.kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
+        kernel_params = {p.name: val for p, val in zip(hyperparams, p_opt)}
 
         if verbose:
-            print(self.kernel_params)
+            print(kernel_params)
 
         if verbose:
             print("Recomputing prior")
 
-        self.fit(**self.kernel_params)
+        self.recompute(**kernel_params)
 
         return self.kernel_params
 
@@ -87,12 +87,9 @@ class LowRankPrior:
     def is_fit(self):
         return self._fit
 
-    def fit(self, ridge=1e-6, **kernel_kwargs):
+    def recompute(self, **kernel_kwargs):
         """ Learn a (low-rank) prior.
         Args:
-            kernel: a kernel function that takes two vectors x and y
-            ridge: element that gets added to the diagonal to avoid numerical instabilites (use depends on low-rank
-                    method)
             kernel_kwargs: get passed to kernel(...)
             
         After fitting, the prior has the following attributes:
@@ -100,14 +97,16 @@ class LowRankPrior:
             - K: Full prior covariance matrix (depending on low-rank method)
         """
 
+        self.kernel_params = kernel_kwargs
+
         if not self.method:
             self.K = prior_covariance(self.x, kernel=self.kernel, **kernel_kwargs)
             self.G = ridge_cholesky(self.K)
 
-            self.D = np.eye(self.x.shape[0]) * ridge
+            self.D = np.eye(self.x.shape[0]) * self.ridge
 
         elif self.method.lower() == 'icd':
-            G = incomplete_cholesky(self.x, eta=1e-4, kernel=self.kernel, ridge=ridge, **kernel_kwargs)["R"]
+            G = incomplete_cholesky(self.x, eta=1e-4, kernel=self.kernel, ridge=0, **kernel_kwargs)["R"]
             self.G = G.T
 
             self.rank = self.G.shape[1]
@@ -115,13 +114,10 @@ class LowRankPrior:
             n = self.x.shape[0]
 
             # correct the diagonal
-            prior_var_uncorrected = np.zeros(n)
-            prior_var_exact = np.zeros(n)
-
-            prior_var_uncorrected = self.G @ self.G.T
+            prior_var_uncorrected = np.diag(self.G @ self.G.T)
             prior_var_exact = np.ones(n) * self.kernel(0, 0, **kernel_kwargs)
 
-            self.D = np.diag(prior_var_exact - prior_var_uncorrected + 2 * ridge)
+            self.D = np.diag(prior_var_exact - prior_var_uncorrected + 2 * self.ridge)
 
             self.K = self.G @ self.G.T + self.D
 
@@ -136,3 +132,6 @@ class LowRankPrior:
         """
 
         return self.K[idx[0], idx[1]]
+
+    def sample(self, sample_shape):
+        return np.random.multivariate_normal(np.zeros(self.K.shape[0]), self.K, size=sample_shape)

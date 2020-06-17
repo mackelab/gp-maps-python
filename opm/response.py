@@ -15,7 +15,7 @@ def response(m, cs, theta, c=0.0, sigma=0.1):
         An array of the same dimension as r containing responses at each pixel
     """
     # r(x,s) = a(x) * s_1(x) + b(x) * s_2(x) + c + noise
-    response = np.real(m) * cs * np.cos(2 * theta) + np.imag(m) * cs * np.sin(2 * theta) + c
+    response = np.real(m) * cs * np.cos(2 * theta) + np.imag(m) * cs * np.sin(2 * theta) + cs * c
     noise = np.random.randn(*m.shape) * sigma
     return response + noise
 
