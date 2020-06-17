@@ -25,7 +25,7 @@ def create_stimuli(contrasts, orientations, repetitions):
             for j in range(repetitions):
                 S[i, j, 0] = c * np.cos(2 * theta)
                 S[i, j, 1] = c * np.sin(2 * theta)
-                S[i, j, 2] = np.sqrt(.5)
+                S[i, j, 2] = c * np.sqrt(.5)
 
             i += 1
 

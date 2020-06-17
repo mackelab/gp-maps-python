@@ -2,7 +2,7 @@ import numpy as np
 from scipy.ndimage import filters
 
 
-def make_opm(size, sigma=4., k=2., alpha=1.):
+def make_opm(size, sigma=4., k=2., alpha=1., d=3):
     """ Generate an orientation preference map (to be used as a fake ground truth). 
      
     
@@ -21,17 +21,11 @@ def make_opm(size, sigma=4., k=2., alpha=1.):
         sx, sy = size
 
     # generate white noise for real and imaginary map
-    a = np.random.randn(sx, sy)
-    b = np.random.randn(sx, sy)
+    x = np.random.randn(d, sx, sy)
 
-    # apply difference of Gaussians filter to both maps
-    a = alpha * filters.gaussian_filter(a, sigma) - alpha * filters.gaussian_filter(a, k * sigma)
-    b = alpha * filters.gaussian_filter(b, sigma) - alpha * filters.gaussian_filter(b, k * sigma)
+    x = np.stack([alpha * filters.gaussian_filter(a, sigma) - alpha * filters.gaussian_filter(a, k * sigma) for a in x])
 
-    # combine real and imaginary parts
-    m = a + 1j * b
-
-    return m
+    return x
 
 
 def vector_average(responses, angles):

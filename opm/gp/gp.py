@@ -187,7 +187,6 @@ if __name__ == "__main__":
     from opm.response import compute_responses
     from opm.stimuli import create_stimuli
     from opm.gp.helpers import get_2d_indices
-    from opm.gp.kernels import fixed_k_mexhat
 
     size = (50, 50)
 
@@ -197,25 +196,22 @@ if __name__ == "__main__":
     idx = get_2d_indices(size)
 
     # ground truth opm
-    m = make_opm(size, alpha=2, k=2, sigma=4)
+    m = make_opm(size, alpha=2, k=2, sigma=4, d=d)
 
-    f, ax, _ = plot_opm(m)
+    f, ax, _ = plot_opm(m[0] + 1j * m[1])
     plt.show()
 
     # compute responses
-    contrasts = [1.]
+    contrasts = [0.5]
     orientations = [i * np.pi / 8 for i in range(8)]
     repetitions = 16
 
     stim = create_stimuli(contrasts, orientations, repetitions)
 
-    N = stim.shape[0] * stim.shape[1]
-    d = stim.shape[2]
+    R = compute_responses(m, stim, noise=0.5)
 
-    V = stim.reshape(N, d)
-
-    R = compute_responses(m, contrasts, orientations, repetitions, sigma=1.)
-    print(R.shape)
+    V = stim.reshape(stim.shape[0] * stim.shape[1], d)
+    print(V.T @ V)
 
     mhat = ml_opm(R, stim)
     mhat = mhat[0] + 1j * mhat[1]
@@ -227,7 +223,7 @@ if __name__ == "__main__":
     gp = GaussianProcessOPM(prior=prior)
 
     mu_post, K_post = gp.fit(stimuli=stim, responses=R, noise='factoran',
-                             verbose=True, calc_postcov=True)
+                             verbose=True, calc_postcov=False)
 
     result = mu_post[0] + 1j * mu_post[1]
     result = result.reshape(size)
