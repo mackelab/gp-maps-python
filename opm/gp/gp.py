@@ -187,7 +187,7 @@ if __name__ == "__main__":
     from opm.stimuli import create_stimuli
     from opm.gp.helpers import get_2d_indices
 
-    size = (50, 50)
+    size = (200, 200)
 
     n = size[0] * size[1]
     d = 3
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     idx = get_2d_indices(size)
 
     # ground truth opm
-    m = make_opm(size, alpha=2, k=2, sigma=4, d=d)
+    m = make_opm(size, alpha=2, k=2, sigma=10, d=d)
 
     f, ax, _ = plot_opm(m[0] + 1j * m[1], shade=True)
     plt.show()
